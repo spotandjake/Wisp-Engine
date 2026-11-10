@@ -21,32 +21,32 @@ export default class Controller {
     // Setup our keyboard event listeners
     target.addEventListener("keydown", (event) => {
       if (!(event instanceof KeyboardEvent)) return;
-      this.keys.add(event.key);
+      this.keys.add(event.code);
     });
     target.addEventListener("keyup", (event) => {
       if (!(event instanceof KeyboardEvent)) return;
-      this.keys.delete(event.key);
+      this.keys.delete(event.code);
     });
   }
   /** Returns the forward/backward axis of the controller. */
   public getForwardAxis(): number {
     let axis = 0;
-    if (this.keys.has('w')) axis += 1;
-    if (this.keys.has('s')) axis -= 1;
+    if (this.keys.has('KeyW')) axis += 1;
+    if (this.keys.has('KeyS')) axis -= 1;
     return axis;
   }
   /** Returns the left/right axis of the controller. */
   public getRightAxis(): number {
     let axis = 0;
-    if (this.keys.has('a')) axis -= 1;
-    if (this.keys.has('d')) axis += 1;
+    if (this.keys.has('KeyA')) axis -= 1;
+    if (this.keys.has('KeyD')) axis += 1;
     return axis;
   }
   /** Returns the up/down axis of the controller. */
   public getUpAxis(): number {
     let axis = 0;
-    if (this.keys.has('e')) axis += 1;
-    if (this.keys.has('q')) axis -= 1;
+    if (this.keys.has('KeyE')) axis += 1;
+    if (this.keys.has('KeyQ')) axis -= 1;
     return axis;
   }
   /** Get yaw axis of the controller. */
@@ -68,7 +68,7 @@ export default class Controller {
   /** Returns the shift axis of the controller. */
   public getShiftAxis(): number {
     let axis = 0;
-    if (this.keys.has('Shift')) axis += 1;
+    if (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')) axis += 1;
     return axis;
   }
 }

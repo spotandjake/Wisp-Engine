@@ -27,7 +27,7 @@ class Camera extends GameObject {
     // These values are set to reasonable defaults, but can be changed if needed.
     fov: number = Math.PI / 4,
     near: number = 0.1,
-    far: number = 100.0,
+    far: number = 1000.0,
   ) {
     // NOTE: We do not allow scaling cameras, as it doesn't really make sense
     super(position, rotation, vec3(1, 1, 1));

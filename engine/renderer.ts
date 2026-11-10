@@ -1,8 +1,15 @@
 import { type Vec3, type Mat4, vec3, mult, mat4 } from "mv-redux";
-import { WebGpuUnavailableError } from "./errors";
+import { WebGpuUnavailableError } from "./internal/errors";
 import type GameObject from "./prototypes/gameObject";
 import RenderableGameObject from "./prototypes/renderableGameObject";
 import Camera from "./primitives/camera";
+
+import Light from "./primitives/light";
+
+// Constants for the renderer
+const LIGHT_SIZE = 64;
+const LIGHT_HEADER_SIZE = 16;
+const INITIAL_LIGHT_CAPACITY = 8;
 
 /** The context for the renderer. */
 export type RendererContext = {
@@ -14,6 +21,8 @@ export type RendererContext = {
   format: GPUTextureFormat;
   /** A shared WebGPU camera buffer. */
   cameraBuffer: GPUBuffer;
+  /** A shared WebGPU buffer of light data. */
+  lightBuffer: GPUBuffer;
   /** The shared WebGPU depth texture. */
   depthTexture: GPUTexture;
 };
@@ -108,6 +117,12 @@ class Renderer extends EventTarget {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
+    // Construct our light buffer
+    const lightBuffer = device.createBuffer({
+      size: LIGHT_HEADER_SIZE + INITIAL_LIGHT_CAPACITY * LIGHT_SIZE,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+
     // Construct our depth texture
     const depthTexture = device.createTexture({
       size: {
@@ -127,6 +142,7 @@ class Renderer extends EventTarget {
         device,
         format,
         cameraBuffer,
+        lightBuffer,
         depthTexture,
       },
     };
@@ -146,6 +162,55 @@ class Renderer extends EventTarget {
     if (this.scene !== null) this.render(this.scene);
     // Request the next frame to be rendered.
     window.requestAnimationFrame(this.update.bind(this));
+  }
+
+  /** Collect lights from the scene. */
+  private getLightData(scene: GameObject): ArrayBuffer {
+    // Collect the lights from the scene
+    const lights: [Light, Mat4][] = [];
+    const collect = (obj: GameObject, worldMatrix: Mat4) => {
+      const worldPosition = mult(worldMatrix, obj.getModelMatrix());
+      // TODO: We need to track the transform of the light in the scene.
+      if (obj instanceof Light) lights.push([obj, worldPosition]);
+      for (const child of obj.children) collect(child, worldPosition);
+    };
+    collect(scene, mat4());
+    // TODO: Quickly check if the light is too far away
+    // Pack the lights
+    const buffer = new ArrayBuffer(LIGHT_HEADER_SIZE + lights.length * LIGHT_SIZE); 
+    const view = new DataView(buffer);
+
+    // NOTE: This matches the LightBuffer & Light struct in the ./prototypes/default.wgsl shader
+    view.setUint32(0, lights.length, true);
+    for (let i = 0; i < lights.length; i++) {
+      const [lightObj, worldMatrix] = lights[i];
+
+      const offset = LIGHT_HEADER_SIZE + i * LIGHT_SIZE;
+      // TODO: Validate this part
+      view.setUint32(offset, lightObj.type == "directional" ? 0 : 1, true);
+      view.setFloat32(offset + 4, lightObj.falloff, true);
+      view.setFloat32(offset + 8, lightObj.intensity, true);
+
+      // Get the position of the light in world space
+      const position = vec3(worldMatrix[3][0], worldMatrix[3][1], worldMatrix[3][2]);
+      view.setFloat32(offset + 16, position.x, true);
+      view.setFloat32(offset + 20, position.y, true);
+      view.setFloat32(offset + 24, position.z, true);
+      console.log("Light position:", position);
+
+      // Get the color of the light
+      view.setFloat32(offset + 32, lightObj.color.x, true);
+      view.setFloat32(offset + 36, lightObj.color.y, true);
+      view.setFloat32(offset + 40, lightObj.color.z, true);
+
+      // Get the direction of the light in world space
+      const direction = vec3(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2]);
+      view.setFloat32(offset + 48, direction.x, true);
+      view.setFloat32(offset + 52, direction.y, true);
+      view.setFloat32(offset + 56, direction.z, true);
+    }
+
+    return buffer;
   }
 
   /** Render an object in the scene. */
@@ -184,6 +249,14 @@ class Renderer extends EventTarget {
       context.cameraBuffer,
       0,
       new Float32Array(viewProjectionMatrix.flat()),
+    );
+
+    // Update the lighting buffer
+    const lightData: ArrayBuffer = this.getLightData(scene);
+    context.device.queue.writeBuffer(
+      context.lightBuffer,
+      0,
+      lightData,
     );
 
     // TODO: Document these better

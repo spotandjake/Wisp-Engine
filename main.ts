@@ -1,5 +1,5 @@
 import { vec3 } from "mv-redux";
-import { WebGpuUnavailableError } from './engine/errors';
+import { WebGpuUnavailableError } from './engine/internal/errors';
 import Renderer, { RendererUpdateEvent } from './engine/renderer';
 import Controller from './engine/controller';
 
@@ -8,6 +8,9 @@ import ControllableBehavior from './engine/behaviors/controllable';
 import World from './engine/primitives/world';
 import Camera from './engine/primitives/camera';
 import Plane from './engine/primitives/plane';
+import Light from './engine/primitives/light';
+
+import Test from './engine/primitives/test';
 
 // Get our dom items
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
@@ -31,7 +34,7 @@ try {
   // Otherwise this error is completely unknown and unexpected
   throw error;
 }
-// Create our controller behaviour
+// Create our controller behavior
 const controller = new Controller(window);
 const controllableBehavior = new ControllableBehavior(controller, 5, 2);
 // Setup our scene
@@ -46,12 +49,23 @@ const camera = new Camera(
 );
 world.addChild(camera);
 
+// Create a player light
+const light = new Light(
+  vec3(0, 0, 0),
+  vec3(0, 0, 0),
+  "point",
+  1.0,
+  vec3(1, 1, 1),
+  100.0
+);
 // Create a second camera for our scene
 const playerCamera = new Camera(
   vec3(0, 10, 0),
   vec3(0, 0, 0),
   canvas.width / canvas.height
 );
+
+playerCamera.addChild(light);
 playerCamera.addBehavior(controllableBehavior);
 world.addChild(playerCamera);
 renderer.setCamera(playerCamera);
@@ -63,6 +77,14 @@ const plane = new Plane(
   vec3(100, 1, 100)
 );
 world.addChild(plane);
+
+// Create a basic test object
+const test = new Test(
+  vec3(0, 1, 0),
+  vec3(0, 0, 0),
+  vec3(0.1, 0.1, 0.1)
+);
+world.addChild(test);
 // TODO: Setup a basic room like scene
 
 // Render the world
@@ -72,7 +94,6 @@ renderer.addEventListener('engineUpdate', (event: Event) => {
   // Update the world
   world.update(deltaTime);
   // TODO: Perform any updates to the scene here
-  console.log(playerCamera.position);
 });
 
 

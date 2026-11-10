@@ -1,7 +1,7 @@
 // NOTE: While this logic could be on gameObject separating it provides more flexibility.
 import type { Vec3, Mat4 } from "mv-redux";
 import type { RendererContext } from "../renderer";
-import { EmptyGeometryError, InvalidGeometryError } from "../errors";
+import { EmptyGeometryError, InvalidGeometryError } from "../internal/errors";
 import type { Geometry } from "../geometry";
 import GameObject from "./gameObject";
 
@@ -12,6 +12,8 @@ type RenderableGameObjectContext = {
   gpuRenderPipeline: GPURenderPipeline;
   /** The GPU vertex buffer for the game object. */
   vertexBuffer: GPUBuffer;
+  /** The GPU normal buffer for the game object. */
+  normalBuffer: GPUBuffer;
   /** The GPU index buffer for the game object. */
   indexBuffer?: GPUBuffer;
   /** The GPU world buffer for the game object. */
@@ -22,8 +24,10 @@ type RenderableGameObjectContext = {
   cameraBindGroup: GPUBindGroup;
   /** The GPU bind group for the world. */
   worldBindGroup: GPUBindGroup;
-  /** The GPU bind group for the object. */
-  objectBindGroup: GPUBindGroup;
+  /** The GPU bind group for the model. */
+  modelBindGroup: GPUBindGroup;
+  /** The GPU bind group for the lights. */
+  lightBindGroup: GPUBindGroup;
   /** The number of vertices to draw. */
   vertexCount: number;
   /** The number of indices to draw. */
@@ -73,6 +77,10 @@ class RenderableGameObject extends GameObject {
       throw new InvalidGeometryError("Geometry must have positions.");
     if (geometry.positions.length % 3 !== 0)
       throw new InvalidGeometryError("Positions must be a multiple of 3.");
+    if (geometry.normals.length !== geometry.positions.length)
+      throw new InvalidGeometryError(
+        "Normals must have the same number of components as positions.",
+      );
     // Compute the vertex count
     const vertexCount = geometry.positions.length / 3;
 
@@ -88,6 +96,12 @@ class RenderableGameObject extends GameObject {
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
     context.device.queue.writeBuffer(vertexBuffer, 0, geometry.positions);
+    // Construct our normal buffer
+    const normalBuffer = context.device.createBuffer({
+      size: geometry.normals.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    context.device.queue.writeBuffer(normalBuffer, 0, geometry.normals);
     // Construct our index buffer (if we have indices)
     let indexBuffer: GPUBuffer | undefined = undefined;
     let indexCount: number | undefined = undefined;
@@ -103,6 +117,7 @@ class RenderableGameObject extends GameObject {
       indexFormat =
         geometry.indices instanceof Uint16Array ? "uint16" : "uint32";
     }
+    
     // Construct our world uniform buffer
     const worldBuffer = context.device.createBuffer({
       size: 64, // 4x4 matrix of 4-byte floats 4x4x4 = 64 bytes
@@ -136,8 +151,7 @@ class RenderableGameObject extends GameObject {
         },
       ],
     });
-
-    // Construct our camera bind group layout
+    // Construct our model bind group layout
     // NOTE: This matches the `var<uniform> model: Model;` in the shader code.
     const modelBindGroupLayout = context.device.createBindGroupLayout({
       entries: [
@@ -145,6 +159,17 @@ class RenderableGameObject extends GameObject {
           binding: 0,
           visibility: GPUShaderStage.VERTEX,
           buffer: { type: "uniform" },
+        },
+      ],
+    });
+    // Construct our light bind group layout
+    // NOTE: This matches the `var<storage, read> lightBuffer: LightBuffer;` in the shader code.
+    const lightBindGroupLayout = context.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: { type: "read-only-storage" },
         },
       ],
     });
@@ -179,12 +204,24 @@ class RenderableGameObject extends GameObject {
         },
       ],
     });
+    // Create the light bind group itself.
+    const lightBindGroup = context.device.createBindGroup({
+      layout: lightBindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: context.lightBuffer },
+        },
+      ],
+    });
 
     // Construct our pipeline layout.
-    // TODO: Figure out exactly what this is and how it works
     const pipelineLayout = context.device.createPipelineLayout({
       bindGroupLayouts: [
-        cameraBindGroupLayout, worldBindGroupLayout, modelBindGroupLayout
+        cameraBindGroupLayout,
+        worldBindGroupLayout,
+        modelBindGroupLayout,
+        lightBindGroupLayout
       ],
     });
     // Construct our actual render pipeline.
@@ -195,12 +232,22 @@ class RenderableGameObject extends GameObject {
         // The entry point for the vertex shader in the shader code.
         entryPoint: "vertex_main",
         buffers: [
+          // The vertexInput struct in the shader code relates to this
           {
             arrayStride: 3 * Float32Array.BYTES_PER_ELEMENT,
             attributes: [
-              // The position attribute we pass in
               {
                 shaderLocation: 0,
+                offset: 0,
+                format: "float32x3",
+              },
+            ],
+          },
+          {
+            arrayStride: 3 * Float32Array.BYTES_PER_ELEMENT,
+            attributes: [
+              {
+                shaderLocation: 1,
                 offset: 0,
                 format: "float32x3",
               },
@@ -231,12 +278,14 @@ class RenderableGameObject extends GameObject {
     const renderContext: RenderableGameObjectContext = {
       gpuRenderPipeline: pipeline,
       vertexBuffer: vertexBuffer,
+      normalBuffer: normalBuffer,
       indexBuffer: indexBuffer,
       worldBuffer: worldBuffer,
       modelBuffer: modelBuffer,
       cameraBindGroup: cameraBindGroup,
       worldBindGroup: worldBindGroup,
-      objectBindGroup: modelBindGroup,
+      modelBindGroup: modelBindGroup,
+      lightBindGroup: lightBindGroup,
       vertexCount: vertexCount,
       indexCount: indexCount,
       indexFormat: indexFormat,
@@ -280,11 +329,14 @@ class RenderableGameObject extends GameObject {
 
     // Record the draw commands.
     pass.setPipeline(objectContext.gpuRenderPipeline);
-    // NOTE: The 0, 1 and 2 here correspond to the bind group indices in the shader code.
+    // NOTE: The indices here correspond to the `@group` in the shader code.
     pass.setBindGroup(0, objectContext.cameraBindGroup);
     pass.setBindGroup(1, objectContext.worldBindGroup);
-    pass.setBindGroup(2, objectContext.objectBindGroup);
+    pass.setBindGroup(2, objectContext.modelBindGroup);
+    pass.setBindGroup(3, objectContext.lightBindGroup);
+
     pass.setVertexBuffer(0, objectContext.vertexBuffer);
+    pass.setVertexBuffer(1, objectContext.normalBuffer);
 
     // TODO: Ensure we handle other properties on the geometry.
 
