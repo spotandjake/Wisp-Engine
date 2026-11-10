@@ -10,7 +10,7 @@ export default class ControllableBehavior extends Behavior {
   private moveSpeed: number;
   private rotationSpeed: number;
 
-  constructor(controller: Controller, moveSpeed: number = 5, rotationSpeed: number = 2) {
+  constructor(controller: Controller, moveSpeed: number = 10, rotationSpeed: number = 2) {
     super();
     this.controller = controller;
     this.moveSpeed = moveSpeed;

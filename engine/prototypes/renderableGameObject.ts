@@ -1,39 +1,40 @@
 // NOTE: While this logic could be on gameObject separating it provides more flexibility.
 import type { Vec3, Mat4 } from "mv-redux";
 import type { RendererContext } from "../renderer";
-import { EmptyGeometryError, InvalidGeometryError } from "../internal/errors";
 import type { Geometry } from "../geometry";
+import { vec3 } from "mv-redux";
+import { EmptyGeometryError, InvalidGeometryError } from "../internal/errors";
 import GameObject from "./gameObject";
+import type Light from "../primitives/light";
 
-import Shader from "./default.wgsl";
+import engineShaderABI, { type EngineBindGroupInfo } from "../shaders/engine";
+import defaultShaderABI, { type DefaultBindGroupInfo } from "../shaders/default";
 
+import Shader from "../shaders/default.wesl?static";
+
+type RenderableGameObjectContextIndices = {
+  indexBuffer: GPUBuffer;
+  indexCount: number;
+  indexFormat: GPUIndexFormat;
+}
 type RenderableGameObjectContext = {
   /** The GPU render pipeline for the game object. */
   gpuRenderPipeline: GPURenderPipeline;
-  /** The GPU vertex buffer for the game object. */
-  vertexBuffer: GPUBuffer;
-  /** The GPU normal buffer for the game object. */
-  normalBuffer: GPUBuffer;
-  /** The GPU index buffer for the game object. */
-  indexBuffer?: GPUBuffer;
-  /** The GPU world buffer for the game object. */
-  worldBuffer: GPUBuffer;
-  /** The GPU model buffer for the game object. */
-  modelBuffer: GPUBuffer;
-  /** The GPU bind group for the camera. */
-  cameraBindGroup: GPUBindGroup;
-  /** The GPU bind group for the world. */
-  worldBindGroup: GPUBindGroup;
-  /** The GPU bind group for the model. */
-  modelBindGroup: GPUBindGroup;
-  /** The GPU bind group for the lights. */
-  lightBindGroup: GPUBindGroup;
-  /** The number of vertices to draw. */
-  vertexCount: number;
-  /** The number of indices to draw. */
-  indexCount?: number;
-  /** The format of the index buffer. */
-  indexFormat?: GPUIndexFormat;
+  /** Model Buffers */
+  modelBuffer: {
+    /** The number of vertices in the model. */
+    vertexCount: number;
+    /** The vertex buffer for the model. */
+    vertexBuffer: GPUBuffer;
+    /** The normal buffer for the model. */
+    normalBuffer: GPUBuffer;
+    /** The index buffer for the model. */
+    indices?: RenderableGameObjectContextIndices;
+  };
+  /** The engine bind group info for the game object. */
+  engineBindGroupInfo: EngineBindGroupInfo;
+  /** The default bind group info for the game object. */
+  defaultBindGroupInfo: DefaultBindGroupInfo;
 };
 
 /** A game object that can be rendered. */
@@ -70,9 +71,9 @@ class RenderableGameObject extends GameObject {
     // Check if our pipeline cache is still valid
     if (this._renderContext !== undefined && this.clean) return this._renderContext;
 
-    // Get the geometry data
+    // Get the geometry
     const geometry = this.getGeometry();
-    // Validate the geometry data
+    // Validate basic properties of the geometry
     if (geometry.positions.length === 0)
       throw new InvalidGeometryError("Geometry must have positions.");
     if (geometry.positions.length % 3 !== 0)
@@ -81,150 +82,63 @@ class RenderableGameObject extends GameObject {
       throw new InvalidGeometryError(
         "Normals must have the same number of components as positions.",
       );
+    
     // Compute the vertex count
     const vertexCount = geometry.positions.length / 3;
-
-    // Compile the shader.
-    // TODO: Maybe this should be hoisted to a global shader cache so we don't compile the same shader multiple times.
-    const shaderModule = context.device.createShaderModule({
-      code: Shader,
-    });
-
-    // Construct our vertex buffer
+    
+    // Create the vertex buffer
     const vertexBuffer = context.device.createBuffer({
       size: geometry.positions.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
     context.device.queue.writeBuffer(vertexBuffer, 0, geometry.positions);
-    // Construct our normal buffer
+    // Create the normal buffer
     const normalBuffer = context.device.createBuffer({
       size: geometry.normals.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
     context.device.queue.writeBuffer(normalBuffer, 0, geometry.normals);
-    // Construct our index buffer (if we have indices)
-    let indexBuffer: GPUBuffer | undefined = undefined;
-    let indexCount: number | undefined = undefined;
-    let indexFormat: GPUIndexFormat | undefined = undefined;
+    // Create the index buffer (if we have indices)
+    let indices: RenderableGameObjectContextIndices | undefined = undefined;
     if (geometry.indices !== undefined) {
-      indexBuffer = context.device.createBuffer({
+      const indexBuffer = context.device.createBuffer({
         size: geometry.indices.byteLength,
         usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       });
       context.device.queue.writeBuffer(indexBuffer, 0, geometry.indices);
-
-      indexCount = geometry.indices.length;
-      indexFormat =
+      // Compute the index count
+      const indexCount = geometry.indices.length;
+      // Compute the index format
+      const indexFormat =
         geometry.indices instanceof Uint16Array ? "uint16" : "uint32";
+
+      indices = {
+        indexCount,
+        indexFormat,
+        indexBuffer,
+      };
     }
-    
-    // Construct our world uniform buffer
-    const worldBuffer = context.device.createBuffer({
-      size: 64, // 4x4 matrix of 4-byte floats 4x4x4 = 64 bytes
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    // Construct our model uniform buffer
-    const modelBuffer = context.device.createBuffer({
-      size: 64, // 4x4 matrix of 4-byte floats 4x4x4 = 64 bytes
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
 
-    // Construct our camera bind group layout
-    // NOTE: This matches the `var<uniform> camera: Camera;` in the shader code.
-    const cameraBindGroupLayout = context.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: { type: "uniform" },
-        },
-      ],
-    });
-    // Construct our world bind group layout
-    // NOTE: This matches the `var<uniform> world: World;` in the shader code.
-    const worldBindGroupLayout = context.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: { type: "uniform" },
-        },
-      ],
-    });
-    // Construct our model bind group layout
-    // NOTE: This matches the `var<uniform> model: Model;` in the shader code.
-    const modelBindGroupLayout = context.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: { type: "uniform" },
-        },
-      ],
-    });
-    // Construct our light bind group layout
-    // NOTE: This matches the `var<storage, read> lightBuffer: LightBuffer;` in the shader code.
-    const lightBindGroupLayout = context.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: "read-only-storage" },
-        },
-      ],
-    });
+    // Compile the shader
+    // TODO: Consider if this should be in a global shader cache for performance reasons???
+    const shaderModule = context.device.createShaderModule({ code: Shader, });
 
-    // Create the camera bind group itself.
-    const cameraBindGroup = context.device.createBindGroup({
-      layout: cameraBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: context.cameraBuffer },
-        },
-      ],
-    });
-    // Create the world bind group itself.
-    const worldBindGroup = context.device.createBindGroup({
-      layout: worldBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: worldBuffer },
-        },
-      ],
-    });
-    // Create the model bind group itself.
-    const modelBindGroup = context.device.createBindGroup({
-      layout: modelBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: modelBuffer },
-        },
-      ],
-    });
-    // Create the light bind group itself.
-    const lightBindGroup = context.device.createBindGroup({
-      layout: lightBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: context.lightBuffer },
-        },
-      ],
-    });
+    // Create the model's uniform buffer and bind group
+    const defaultBindGroupInfo = defaultShaderABI.setupBindGroup(context.device);
+    // Create the engine's uniforms and bind groups
+    const engineBindGroupInfo = engineShaderABI.setupBindGroup(context.device);
 
-    // Construct our pipeline layout.
+    // Construct our pipeline layout
     const pipelineLayout = context.device.createPipelineLayout({
       bindGroupLayouts: [
-        cameraBindGroupLayout,
-        worldBindGroupLayout,
-        modelBindGroupLayout,
-        lightBindGroupLayout
+        // Engine bindings
+        engineBindGroupInfo.bindGroupLayout,
+        // User supplied bindings
+        defaultBindGroupInfo.bindGroupLayout,
       ],
     });
-    // Construct our actual render pipeline.
+
+    // Create the render pipeline
     const pipeline = context.device.createRenderPipeline({
       layout: pipelineLayout,
       vertex: {
@@ -277,18 +191,14 @@ class RenderableGameObject extends GameObject {
     // Build the render context for this object.
     const renderContext: RenderableGameObjectContext = {
       gpuRenderPipeline: pipeline,
-      vertexBuffer: vertexBuffer,
-      normalBuffer: normalBuffer,
-      indexBuffer: indexBuffer,
-      worldBuffer: worldBuffer,
-      modelBuffer: modelBuffer,
-      cameraBindGroup: cameraBindGroup,
-      worldBindGroup: worldBindGroup,
-      modelBindGroup: modelBindGroup,
-      lightBindGroup: lightBindGroup,
-      vertexCount: vertexCount,
-      indexCount: indexCount,
-      indexFormat: indexFormat,
+      modelBuffer: {
+        vertexCount,
+        vertexBuffer,
+        normalBuffer,
+        indices: indices
+      },
+      engineBindGroupInfo: engineBindGroupInfo,
+      defaultBindGroupInfo: defaultBindGroupInfo,
     };
     // Caches
     this._renderContext = renderContext;
@@ -310,51 +220,51 @@ class RenderableGameObject extends GameObject {
     context: RendererContext,
     pass: GPURenderPassEncoder,
     worldMatrix: Mat4,
+    lights: [Light, Vec3, Vec3][],
+    viewProjectionMatrix: Mat4,
   ): void {
-    const objectContext = this.initialize(context);
-
-    // Update the world matrix.
-    context.device.queue.writeBuffer(
-      objectContext.worldBuffer,
-      0,
-      new Float32Array(worldMatrix.flat()),
-    );
-    // Update the model matrix.
+    const renderContext = this.initialize(context);
     const model = this.getModelMatrix();
-    context.device.queue.writeBuffer(
-      objectContext.modelBuffer,
-      0,
-      new Float32Array(model.flat()),
-    );
 
     // Record the draw commands.
-    pass.setPipeline(objectContext.gpuRenderPipeline);
-    // NOTE: The indices here correspond to the `@group` in the shader code.
-    pass.setBindGroup(0, objectContext.cameraBindGroup);
-    pass.setBindGroup(1, objectContext.worldBindGroup);
-    pass.setBindGroup(2, objectContext.modelBindGroup);
-    pass.setBindGroup(3, objectContext.lightBindGroup);
+    pass.setPipeline(renderContext.gpuRenderPipeline);
 
-    pass.setVertexBuffer(0, objectContext.vertexBuffer);
-    pass.setVertexBuffer(1, objectContext.normalBuffer);
+    // Pass the data to the GPU using the engine shader ABI.
+    engineShaderABI.passData(
+      context.device,
+      pass,
+      renderContext.engineBindGroupInfo,
+      lights,
+      // TODO: Move this to the renderer and pass it in as a parameter
+      {
+        ambientLight: vec3(0.2, 0.2, 0.2),
+        viewProjection: viewProjectionMatrix,
+      },
+      worldMatrix
+    );
+    // Pass the data to the GPU using the default shader ABI.
+    defaultShaderABI.passData(
+      context.device,
+      pass,
+      renderContext.defaultBindGroupInfo,
+      model
+    );
 
-    // TODO: Ensure we handle other properties on the geometry.
+    // Bind the vertex shader parameters
+    pass.setVertexBuffer(0, renderContext.modelBuffer.vertexBuffer);
+    pass.setVertexBuffer(1, renderContext.modelBuffer.normalBuffer);
 
     // Draw geometry.
     if (
-      objectContext.indexBuffer !== undefined &&
-      objectContext.indexCount !== undefined &&
-      objectContext.indexFormat !== undefined
+      renderContext.modelBuffer.indices !== undefined
     ) {
+      const { indexBuffer, indexCount, indexFormat } = renderContext.modelBuffer.indices;
       // If we have an index buffer, use it to draw the geometry.
-      pass.setIndexBuffer(
-        objectContext.indexBuffer,
-        objectContext.indexFormat,
-      );
-      pass.drawIndexed(objectContext.indexCount);
+      pass.setIndexBuffer(indexBuffer, indexFormat);
+      pass.drawIndexed(indexCount);
     } else {
       // Otherwise draw the geometry using the vertex count.
-      pass.draw(objectContext.vertexCount);
+      pass.draw(renderContext.modelBuffer.vertexCount);
     }
   }
 }

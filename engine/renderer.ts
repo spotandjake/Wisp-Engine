@@ -9,7 +9,6 @@ import Light from "./primitives/light";
 // Constants for the renderer
 const LIGHT_SIZE = 64;
 const LIGHT_HEADER_SIZE = 16;
-const INITIAL_LIGHT_CAPACITY = 8;
 
 /** The context for the renderer. */
 export type RendererContext = {
@@ -19,10 +18,6 @@ export type RendererContext = {
   device: GPUDevice;
   /** The WebGPU texture format. */
   format: GPUTextureFormat;
-  /** A shared WebGPU camera buffer. */
-  cameraBuffer: GPUBuffer;
-  /** A shared WebGPU buffer of light data. */
-  lightBuffer: GPUBuffer;
   /** The shared WebGPU depth texture. */
   depthTexture: GPUTexture;
 };
@@ -111,18 +106,6 @@ class Renderer extends EventTarget {
     // TODO: What happens if the canvas is resized?
     context.configure({ device, format, alphaMode: "opaque" });
 
-    // Construct our camera buffer
-    const cameraBuffer = device.createBuffer({
-      size: 64, // 4x4 matrix of 4-byte floats 4x4x4 = 64 bytes
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    // Construct our light buffer
-    const lightBuffer = device.createBuffer({
-      size: LIGHT_HEADER_SIZE + INITIAL_LIGHT_CAPACITY * LIGHT_SIZE,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-
     // Construct our depth texture
     const depthTexture = device.createTexture({
       size: {
@@ -141,8 +124,6 @@ class Renderer extends EventTarget {
         context,
         device,
         format,
-        cameraBuffer,
-        lightBuffer,
         depthTexture,
       },
     };
@@ -165,52 +146,19 @@ class Renderer extends EventTarget {
   }
 
   /** Collect lights from the scene. */
-  private getLightData(scene: GameObject): ArrayBuffer {
+  private getLightData(scene: GameObject): [Light, Vec3, Vec3][] {
     // Collect the lights from the scene
-    const lights: [Light, Mat4][] = [];
+    const lights: [Light, Vec3, Vec3][] = [];
     const collect = (obj: GameObject, worldMatrix: Mat4) => {
-      const worldPosition = mult(worldMatrix, obj.getModelMatrix());
+      const modelMatrix = mult(worldMatrix, obj.getModelMatrix());
+      const worldPosition = vec3(modelMatrix[3][0], modelMatrix[3][1], modelMatrix[3][2]);
+      const worldDirection = vec3(modelMatrix[0][2], modelMatrix[1][2], modelMatrix[2][2]);
       // TODO: We need to track the transform of the light in the scene.
-      if (obj instanceof Light) lights.push([obj, worldPosition]);
-      for (const child of obj.children) collect(child, worldPosition);
+      if (obj instanceof Light) lights.push([obj, worldPosition, worldDirection]);
+      for (const child of obj.children) collect(child, modelMatrix);
     };
     collect(scene, mat4());
-    // TODO: Quickly check if the light is too far away
-    // Pack the lights
-    const buffer = new ArrayBuffer(LIGHT_HEADER_SIZE + lights.length * LIGHT_SIZE); 
-    const view = new DataView(buffer);
-
-    // NOTE: This matches the LightBuffer & Light struct in the ./prototypes/default.wgsl shader
-    view.setUint32(0, lights.length, true);
-    for (let i = 0; i < lights.length; i++) {
-      const [lightObj, worldMatrix] = lights[i];
-
-      const offset = LIGHT_HEADER_SIZE + i * LIGHT_SIZE;
-      // TODO: Validate this part
-      view.setUint32(offset, lightObj.type == "directional" ? 0 : 1, true);
-      view.setFloat32(offset + 4, lightObj.falloff, true);
-      view.setFloat32(offset + 8, lightObj.intensity, true);
-
-      // Get the position of the light in world space
-      const position = vec3(worldMatrix[3][0], worldMatrix[3][1], worldMatrix[3][2]);
-      view.setFloat32(offset + 16, position.x, true);
-      view.setFloat32(offset + 20, position.y, true);
-      view.setFloat32(offset + 24, position.z, true);
-      console.log("Light position:", position);
-
-      // Get the color of the light
-      view.setFloat32(offset + 32, lightObj.color.x, true);
-      view.setFloat32(offset + 36, lightObj.color.y, true);
-      view.setFloat32(offset + 40, lightObj.color.z, true);
-
-      // Get the direction of the light in world space
-      const direction = vec3(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2]);
-      view.setFloat32(offset + 48, direction.x, true);
-      view.setFloat32(offset + 52, direction.y, true);
-      view.setFloat32(offset + 56, direction.z, true);
-    }
-
-    return buffer;
+    return lights;
   }
 
   /** Render an object in the scene. */
@@ -218,18 +166,20 @@ class Renderer extends EventTarget {
     context: RendererContext,
     pass: GPURenderPassEncoder,
     worldMatrix: Mat4,
+    lights: [Light, Vec3, Vec3][],
+    viewProjectionMatrix: Mat4,
     gameObject: GameObject,
   ): void {
     // Render the object itself
     if (gameObject instanceof RenderableGameObject) {
-      gameObject.render(context, pass, worldMatrix);
+      gameObject.render(context, pass, worldMatrix, lights, viewProjectionMatrix);
     }
     // Render the object's children
     const modelMatrix = gameObject.getModelMatrix();
     const childWorldMatrix = mult(worldMatrix, modelMatrix);
     for (const child of gameObject.children) {
       // NOTE: We handle nested transformations by using the parent as the world.
-      this.renderObject(context, pass, childWorldMatrix, child);
+      this.renderObject(context, pass, childWorldMatrix, lights, viewProjectionMatrix, child);
     }
   }
 
@@ -244,20 +194,9 @@ class Renderer extends EventTarget {
     // Compute the combined view-projection matrix
     const viewProjectionMatrix: Mat4 = mult(projectionMatrix, viewMatrix);
 
-    // Update the camera buffer with the view-projection matrix
-    context.device.queue.writeBuffer(
-      context.cameraBuffer,
-      0,
-      new Float32Array(viewProjectionMatrix.flat()),
-    );
-
     // Update the lighting buffer
-    const lightData: ArrayBuffer = this.getLightData(scene);
-    context.device.queue.writeBuffer(
-      context.lightBuffer,
-      0,
-      lightData,
-    );
+    const lightData = this.getLightData(scene);
+    // TODO: Figure out how best to pack the light data into a buffer and update it
 
     // TODO: Document these better
     // Create the command encoder.
@@ -283,7 +222,7 @@ class Renderer extends EventTarget {
     });
 
     // Render the scene, (use the viewProjectionMatrix as the initial worldMatrix for the root object)
-    this.renderObject(context, pass, mat4(), scene);
+    this.renderObject(context, pass, mat4(), lightData, viewProjectionMatrix, scene);
 
     // End the render pass and submit the commands to the GPU.
     pass.end();

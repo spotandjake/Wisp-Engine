@@ -1,6 +1,11 @@
 // TODO: Document and improve this shader.
 // TODO: Thought, why don't we have a `struct RendererInput` which contains all the inputs from the renderer, we can then provide some basic functions for instance computing the lighting from the RendererInput. This would make the shader system far more modular. We can require that this is always bound in group 0 for instance as well and then we can make the lifetimes of the group bindings be something that the renderer itself manages rather than renderable, this should improve performance quite a bit.
 
+// struct Renderer {
+//   // Light Buffer related data
+
+// }
+
 struct Camera {
   // NOTE: This is the pre multiplied projectionMatrix * viewMatrix
   viewProjection: mat4x4<f32>,
@@ -76,8 +81,8 @@ fn vertex_main(input: VertexInput) -> VertexOutput {
 
 @fragment
 fn fragment_main(input: VertexOutput) -> @location(0) vec4<f32> {
-  var lighting = vec3<f32>(0.1, 0.1, 0.1);
-  var objectColor = vec3<f32>(1.0, 0.0, 0.0);
+  var lighting = vec3<f32>(0.2, 0.2, 0.2);
+  var objectColor = vec3<f32>(1.0, 0.5, 0.0);
 
   // TODO: Better document this
   for (var i = 0u; i < lightBuffer.count; i++) {
@@ -91,7 +96,6 @@ fn fragment_main(input: VertexOutput) -> @location(0) vec4<f32> {
       case 0u: {
         direction = normalize(-light.direction);
       }
-
       // Point light
       case 1u: {
         let offset = light.position - input.worldPosition;
@@ -100,7 +104,6 @@ fn fragment_main(input: VertexOutput) -> @location(0) vec4<f32> {
         direction = normalize(offset);
         attenuation = max(1.0 - distance / light.range, 0.0);
       }
-
       default: {
         continue;
       }

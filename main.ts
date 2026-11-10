@@ -79,12 +79,12 @@ const plane = new Plane(
 world.addChild(plane);
 
 // Create a basic test object
-const test = new Test(
-  vec3(0, 1, 0),
-  vec3(0, 0, 0),
-  vec3(0.1, 0.1, 0.1)
-);
-world.addChild(test);
+// const test = new Test(
+//   vec3(0, 1, 0),
+//   vec3(0, 0, 0),
+//   vec3(0.1, 0.1, 0.1)
+// );
+// world.addChild(test);
 // TODO: Setup a basic room like scene
 
 // Render the world

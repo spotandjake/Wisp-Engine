@@ -34,6 +34,12 @@ class Plane extends RenderableGameObject {
         0, 2, 1,
         0, 3, 2,
       ]),
+      colors: new Float32Array([
+        1, 1, 1, 1,
+        1, 1, 1, 1,
+        1, 1, 1, 1,
+        1, 1, 1, 1,
+      ]),
     };
   }
 }
