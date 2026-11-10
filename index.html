@@ -1,13 +1,63 @@
 <!-- http://localhost:5173/assignments/assignment-02/ -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script type="module" src="./main.ts"></script>
     <title>Assignment 2</title>
+
+    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <canvas id="screen" width="512" height="512"></canvas>
+
+    <!-- TODO: Clean up this ui code -->
+    <form class="menu" id="menu">
+      <div class="group">
+        <p>
+          <label for="ct">Camera: </label>
+          <input id="ct" type="checkbox">
+        </p>
+      </div>
+      <div class="group">
+        <p>
+          <label for="cx">Camera <i>x</i>-position</label>
+          <input
+            id="cx"
+            type="range"
+            min="-15"
+            max="15"
+            step="0.25"
+            value="3.0"
+          />
+          <span aria-hidden="true">3.00</span>
+        </p>
+        <p>
+          <label for="cy">Camera <i>y</i>-position</label>
+          <input
+            id="cy"
+            type="range"
+            min="-15"
+            max="15"
+            step="0.25"
+            value="2.5"
+          />
+          <span aria-hidden="true">2.50</span>
+        </p>
+        <p>
+          <label for="cz">Camera <i>z</i>-position</label>
+          <input
+            id="cz"
+            type="range"
+            min="-15"
+            max="15"
+            step="0.25"
+            value="3.0"
+          />
+          <span aria-hidden="true">3.00</span>
+        </p>
+      </div>
+    </form>
   </body>
 </html>

@@ -1,7 +1,7 @@
 import { type Vec3, type Mat4, vec3, mult, mat4 } from "mv-redux";
 import { WebGpuUnavailableError } from "./errors";
-import type GameObject from "./gameObject";
-import RenderableGameObject from "./renderableGameObject";
+import type GameObject from "./prototypes/gameObject";
+import RenderableGameObject from "./prototypes/renderableGameObject";
 import Camera from "./primitives/camera";
 
 /** The context for the renderer. */

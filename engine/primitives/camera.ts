@@ -8,7 +8,7 @@ import {
   mult,
   inverse
 } from "mv-redux";
-import GameObject from "../gameObject";
+import GameObject from "../prototypes/gameObject";
 
 class Camera extends GameObject {
   /** The fov of the camera in radians. */

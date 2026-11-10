@@ -1,8 +1,8 @@
 // NOTE: While this logic could be on gameObject separating it provides more flexibility.
 import type { Vec3, Mat4 } from "mv-redux";
-import type { RendererContext } from "./renderer";
-import { EmptyGeometryError, InvalidGeometryError } from "./errors";
-import type { Geometry } from "./geometry";
+import type { RendererContext } from "../renderer";
+import { EmptyGeometryError, InvalidGeometryError } from "../errors";
+import type { Geometry } from "../geometry";
 import GameObject from "./gameObject";
 
 import Shader from "./default.wgsl";

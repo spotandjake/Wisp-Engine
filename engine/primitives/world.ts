@@ -1,7 +1,8 @@
-import { type Vec3, vec3 } from "mv-redux";
-import GameObject from "../gameObject";
+import { vec3 } from "mv-redux";
+import GameObject from "../prototypes/gameObject";
 
-export default class w extends GameObject {
+/** This is a pretty dumb class that acts as a more structural container for the entire game world. */
+export default class World extends GameObject {
   constructor() {
     super(
       // NOTE: We do not allow configuring these as it wouldn't really make sense

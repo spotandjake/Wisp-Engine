@@ -1,6 +1,6 @@
 import { type Vec3 } from "mv-redux";
 import type { Geometry } from "../geometry";
-import RenderableGameObject from "../renderableGameObject";
+import RenderableGameObject from "../prototypes/renderableGameObject";
 
 /** A basic plane in 3D space. */
 class Plane extends RenderableGameObject {

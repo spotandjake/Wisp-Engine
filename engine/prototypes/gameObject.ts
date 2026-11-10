@@ -6,6 +6,7 @@ import {
   scaleMatrix,
   mult,
 } from "mv-redux";
+import type Behavior from "./behavior";
 
 /** A game object in the scene. */
 class GameObject {
@@ -17,6 +18,8 @@ class GameObject {
   public scale: Vec3;
   /** The children of the game object. */
   public readonly children: GameObject[] = [];
+  /** The behaviors of the game object. */
+  public readonly behaviors: Behavior[] = [];
 
   /** Creates a new game object. */
   constructor(position: Vec3, rotation: Vec3, scale: Vec3) {
@@ -29,10 +32,13 @@ class GameObject {
   public addChild(child: GameObject): void {
     this.children.push(child);
   }
+  /** Adds a behavior to the game object. */
+  public addBehavior(behavior: Behavior): void {
+    this.behaviors.push(behavior);
+  }
 
   /** Creates a model matrix from the object's position, rotation, and scale. */
   public getModelMatrix(): Mat4 {
-    // TODO: Should this take into consideration it's parent
     const translation = translationMatrix(this.position);
     const rotationX = rotationMatrix("x", this.rotation.x);
     const rotationY = rotationMatrix("y", this.rotation.y);
@@ -43,6 +49,18 @@ class GameObject {
       translation,
       mult(rotationZ, mult(rotationY, mult(rotationX, scale))),
     );
+  }
+
+  /** Updates the game object. (Runs behaviors) */
+  public update(deltaTime: number): void {
+    // Apply all behaviors to this game object
+    for (const behavior of this.behaviors) {
+      behavior.apply(this, deltaTime);
+    }
+    // Update all children
+    for (const child of this.children) {
+      child.update(deltaTime);
+    }
   }
 }
 
