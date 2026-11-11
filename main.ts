@@ -4,7 +4,9 @@ import Renderer, { RendererUpdateEvent } from './engine/renderer';
 import Controller from './engine/controller';
 
 import ControllableBehavior from './engine/behaviors/controllable';
+import SliderBehavior from './engine/behaviors/slider';
 
+import GameObject from './engine/prototypes/gameObject';
 import World from './engine/primitives/world';
 import Camera from './engine/primitives/camera';
 import Plane from './engine/primitives/plane';
@@ -37,6 +39,19 @@ try {
 // Create our controller behavior
 const controller = new Controller(window);
 const controllableBehavior = new ControllableBehavior(controller, 5, 2);
+
+// Create our slider behavior for the camera
+const cameraSliderBehavior = (gameObject: GameObject) => new SliderBehavior(
+  gameObject,
+  {
+    x: cameraX,
+    y: cameraY,
+    z: cameraZ,
+  },
+  undefined,
+  undefined
+);
+
 // Setup our scene
 const world = new World();
 renderer.setScene(world);
@@ -47,6 +62,8 @@ const camera = new Camera(
   vec3(-Math.PI / 2, 0, 0),
   canvas.width / canvas.height
 );
+camera.addBehavior(cameraSliderBehavior(camera));
+// TODO: Add sliders for scale, rotation and position.
 world.addChild(camera);
 
 // Create a player light
