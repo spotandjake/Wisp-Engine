@@ -6,10 +6,6 @@ import Camera from "./primitives/camera";
 
 import Light from "./primitives/light";
 
-// Constants for the renderer
-const LIGHT_SIZE = 64;
-const LIGHT_HEADER_SIZE = 16;
-
 /** The context for the renderer. */
 export type RendererContext = {
   /** The WebGPU canvas context. */
@@ -168,18 +164,19 @@ class Renderer extends EventTarget {
     worldMatrix: Mat4,
     lights: [Light, Vec3, Vec3][],
     viewProjectionMatrix: Mat4,
+    cameraPosition: Vec3,
     gameObject: GameObject,
   ): void {
     // Render the object itself
     if (gameObject instanceof RenderableGameObject) {
-      gameObject.render(context, pass, worldMatrix, lights, viewProjectionMatrix);
+      gameObject.render(context, pass, worldMatrix, lights, viewProjectionMatrix, cameraPosition);
     }
     // Render the object's children
     const modelMatrix = gameObject.getModelMatrix();
     const childWorldMatrix = mult(worldMatrix, modelMatrix);
     for (const child of gameObject.children) {
       // NOTE: We handle nested transformations by using the parent as the world.
-      this.renderObject(context, pass, childWorldMatrix, lights, viewProjectionMatrix, child);
+      this.renderObject(context, pass, childWorldMatrix, lights, viewProjectionMatrix, cameraPosition, child);
     }
   }
 
@@ -190,6 +187,7 @@ class Renderer extends EventTarget {
     const context = this.context.context;
     // Get the camera's view and projection matrices
     const viewMatrix: Mat4 = this.camera.getViewMatrix();
+    const cameraPosition: Vec3 = this.camera.position;
     const projectionMatrix: Mat4 = this.camera.getProjectionMatrix();
     // Compute the combined view-projection matrix
     const viewProjectionMatrix: Mat4 = mult(projectionMatrix, viewMatrix);
@@ -222,7 +220,7 @@ class Renderer extends EventTarget {
     });
 
     // Render the scene, (use the viewProjectionMatrix as the initial worldMatrix for the root object)
-    this.renderObject(context, pass, mat4(), lightData, viewProjectionMatrix, scene);
+    this.renderObject(context, pass, mat4(), lightData, viewProjectionMatrix, cameraPosition, scene);
 
     // End the render pass and submit the commands to the GPU.
     pass.end();

@@ -222,6 +222,7 @@ class RenderableGameObject extends GameObject {
     worldMatrix: Mat4,
     lights: [Light, Vec3, Vec3][],
     viewProjectionMatrix: Mat4,
+    cameraPosition: Vec3
   ): void {
     const renderContext = this.initialize(context);
     const model = this.getModelMatrix();
@@ -237,6 +238,7 @@ class RenderableGameObject extends GameObject {
       // TODO: Move this to the renderer and pass it in as a parameter
       {
         ambientLight: vec3(0.2, 0.2, 0.2),
+        cameraPosition: cameraPosition,
         viewProjection: viewProjectionMatrix,
       },
       worldMatrix

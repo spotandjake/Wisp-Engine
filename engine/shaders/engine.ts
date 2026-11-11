@@ -18,7 +18,7 @@ const MAX_LIGHTS = 64;
 /** The size of the light buffer. */
 const LIGHT_BUFFER_SIZE = LIGHT_BUFFER_HEADER_SIZE + LIGHT_STRUCT_BYTE_SIZE * MAX_LIGHTS;
 /** The size of the renderer buffer. */
-const RENDERER_BUFFER_SIZE = 16 + MAT4_SIZE; // ambient_light (16 bytes) + viewProjection (64 bytes)
+const RENDERER_BUFFER_SIZE = VEC3_SIZE + VEC3_SIZE + MAT4_SIZE; // ambient_light (16 bytes) + camera_position (16 bytes) + viewProjection (64 bytes)
 /** The size of the world buffer. */
 const WORLD_BUFFER_SIZE = MAT4_SIZE; // 4x4 matrix of 4 byte values
 
@@ -27,6 +27,7 @@ const WORLD_BUFFER_SIZE = MAT4_SIZE; // 4x4 matrix of 4 byte values
 // TODO: Is this the best place for this to live
 export type RendererData = {
   ambientLight: Vec3;
+  cameraPosition: Vec3;
   viewProjection: Mat4;
 }
 
@@ -58,7 +59,7 @@ const packLightData = (lights: [Light, Vec3, Vec3][]): ArrayBuffer => {
 
     // Write the data to the buffer
     view.setUint32(offset, encodeLightType(light.type), true); // light_type
-    view.setFloat32(offset += 4, light.falloff, true); // range
+    view.setFloat32(offset += 4, light.range, true); // range
     view.setFloat32(offset += 4, light.intensity, true); // intensity
     offset += 4; // Padding
 
@@ -77,19 +78,14 @@ const packLightData = (lights: [Light, Vec3, Vec3][]): ArrayBuffer => {
 const packRendererData = (renderer: RendererData): ArrayBuffer => {
   // Create a buffer for the renderer data
   const buffer = new ArrayBuffer(RENDERER_BUFFER_SIZE);
-  const view = new DataView(buffer);
 
   let offset= 0;
   // Write the ambient light
-  view.setFloat32(offset, renderer.ambientLight[0], true);
-  view.setFloat32(offset += 4, renderer.ambientLight[1], true);
-  view.setFloat32(offset += 4, renderer.ambientLight[2], true);
+  writeVec3(renderer.ambientLight, buffer, offset);
+  // Write the camera position
+  writeVec3(renderer.cameraPosition, buffer, offset += VEC3_SIZE);
   // Write the viewProjection matrix
-  const viewProjection = renderer.viewProjection.flat();
-  for (let i = 0; i < 16; i++) {
-    // TODO: Compute these offsets better
-    view.setFloat32(16 + i * 4, viewProjection[i], true);
-  }
+  writeMat4(renderer.viewProjection, buffer, offset += VEC3_SIZE);
 
   return buffer;
 }

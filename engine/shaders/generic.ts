@@ -17,7 +17,7 @@ export const F32_SIZE = 4; // Size of a 32-bit float in bytes
 /** The size of a vec2 in bytes. */
 export const VEC2_SIZE = 8;
 /** The size of a vec3 in bytes. */
-export const VEC3_SIZE = 12;
+export const VEC3_SIZE = 16;
 /** The size of a mat4 in bytes. */
 export const MAT4_SIZE = 64;
 

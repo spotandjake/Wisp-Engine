@@ -51,6 +51,8 @@ struct LightBuffer {
 struct Renderer {
   /** The ambient light in the scene. */
   ambient_light: vec3<f32>,
+  /** The position of the camera in the scene. */
+  camera_position: vec3<f32>,
   /** The view projection matrix of the camera. */
   view_projection: mat4x4<f32>,
 }
@@ -64,64 +66,82 @@ struct World {
 }
 
 /**
- * A basic implementation of Lambertian diffuse lighting.
+ * A basic implementation of Blinn-Phong diffuse lighting.
  * 
  * If a consumer want's to add lighting to their fragment shader they can call this function and multiply 
  * the result by their fragment color to get a basic lighting effect.
  * 
  * @param worldPosition The world position of the fragment.
  * @param normal The normal of the fragment.
- * @returns The lighting color to apply to the fragment.
+ * @returns The lighting factor to apply to the fragment color, in the range [0, 1].
  */
-fn apply_fragment_lighting(worldPosition: vec3<f32>, normal: vec3<f32>) -> vec3<f32> {
-  // NOTE: This is a very basic implementation, and does not take into account many factors such as specular highlights, shadows, etc.
-  // NOTE: This also isn't the most performant way todo lighting as we need to iterate over all the lights in the scene for every fragment, but this is a good starting point for a basic lighting implementation.
-
-  // This is the base amount of ambient light in our scene.
+fn apply_fragment_lighting(
+  worldPosition: vec3<f32>,
+  normal: vec3<f32>
+) -> vec3<f32> {
+  // NOTE: This is a very basic implementation of Blinn-Phong lighting, and does not take into account many factors such as specular highlights, shadows, material properties, etc.
   var lighting = renderer.ambient_light;
 
-  // Go through all the lights in our scene and apply their lighting to the fragment.
+  // Normalize our normal and compute the view direction from the camera to the fragment.
+  let N = normalize(normal);
+  let V = normalize(renderer.camera_position - worldPosition);
+
+  // Iterate over the lights in the scene
   for (var i = 0u; i < lightBuffer.count; i++) {
-    // Get the light from the light buffer
+    // Get the light from the buffer
     let light = lightBuffer.lights[i];
 
-    var direction: vec3<f32>;
+    var L: vec3<f32>;
     var attenuation = 1.0;
 
+    // Compute the light direction and attenuation based on the light type
     switch (light.light_type) {
-      case LIGHT_TYPE_DIRECTIONAL: {
-        // The light direction is the opposite of the light's direction, as we want to know where the light is coming from.
-        direction = normalize(-light.direction);
-      }
-      case LIGHT_TYPE_POINT: {
-        // Compute the distance from the light to the fragment, and use that to compute the attenuation of the light's intensity based on the distance.
-        let offset = light.position - worldPosition;
-        let distance = length(offset);
+      // Directional lights have a direction, but no position, and do not attenuate with distance.
+        case LIGHT_TYPE_DIRECTIONAL: {
+          L = normalize(-light.direction);
+        }
+        case LIGHT_TYPE_POINT: {
+          // Point lights have a position, and attenuate with distance.
+          let offset = light.position - worldPosition;
+          let distance = length(offset);
+          // If the distance is very small, we can skip this light to avoid division by zero and other artifacts.
+          if (distance < 0.0001) {
+            continue;
+          }
 
-        // The light direction is the direction from the fragment to the light, as we want to know where the light is coming from.
-        direction = normalize(offset);
-        // TODO: Protect against divide by zero
+          // Compute the light direction from the fragment to the light, and normalize it.
+          L = offset / distance;
 
-        // We apply a falloff to the light's intensity based on the distance from the light to the fragment, using a simple squared falloff. This is a very basic implementation, and can be improved upon in many ways.
-        attenuation = pow(
-          max(1.0 - distance / light.range, 0.0),
-          2.0
-        );
-      }
-      // Default case, we don't know what type of light this is, so we just skip it.
-      default: {
-        continue;
-      }
+          // Compute the attenuation based on the distance from the light to the fragment, using a simple squared falloff.
+          // NOTE: Different curves can be used for different effects, such as linear falloff, inverse square falloff, etc. This is a very basic implementation, and can be improved upon in many ways.
+          attenuation = pow(
+            max(1.0 - distance / light.range, 0.0),
+            2.0
+          );
+        }
+        // If we do not recognize the light type we just skip it for now, as we don't know how to handle it.
+        default: {
+          continue;
+        }
+    }
+    // Compute the diffuse and specular lighting for this light, based on the Blinn-Phong reflection model.
+    // https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model
+    let ndotl = max(dot(N, L), 0.0);
+    let diffuse = ndotl;
+    var specular = 0.0;
+    if (ndotl > 0.0) {
+      // Only compute the specular lighting if the light is actually hitting the surface, as we don't want to have specular highlights on the back side of objects.
+      let H = normalize(L + V);
+
+      specular = pow(
+        max(dot(N, H), 0.0),
+        32.0
+      );
     }
 
-    // Compute the specific diffuse lighting for this light, based on the Lambertian reflectance model.
-    // https://en.wikipedia.org/wiki/Lambertian_reflectance
-    let diffuse = max(dot(normal, direction), 0.0);
-
-    // Apply the lighting from this light to the total lighting for this fragment, taking into account the light's color, intensity, and attenuation.
-    lighting += light.color * light.intensity * diffuse * attenuation;
+    lighting += light.color * light.intensity * attenuation * (diffuse + specular);
   }
-  
-  // Ensure that the lighting is clamped between 0 and 1, as we don't want to have negative lighting or lighting that is too bright.
-  return clamp(lighting, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
+
+  // Clamp the lighting to the range [0, 1] to avoid over-brightening the scene.
+  return clamp(lighting, vec3<f32>(0.0), vec3<f32>(1.0));
 }

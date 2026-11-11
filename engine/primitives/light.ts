@@ -13,8 +13,8 @@ class Light extends GameObject {
   public readonly intensity: number;
   /** The color of the light itself. */
   public readonly color: Vec3;
-  /** The falloff of the light itself. */
-  public readonly falloff: number;
+  /** The range of the light itself. */
+  public readonly range: number;
 
   constructor(
     position: Vec3,
@@ -23,7 +23,7 @@ class Light extends GameObject {
     lightType: LightType = "point",
     intensity: number = 1.0,
     color: Vec3 = vec3(1, 1, 1),
-    falloff: number = 10.0
+    range: number = 10.0
   ) {
     // NOTE: We do not allow scaling lights, as it doesn't really make sense
     super(position, rotation, vec3(1, 1, 1));
@@ -31,7 +31,7 @@ class Light extends GameObject {
     this.type = lightType;
     this.intensity = intensity;
     this.color = color;
-    this.falloff = falloff;
+    this.range = range;
   }
 }
 
