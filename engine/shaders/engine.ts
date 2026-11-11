@@ -5,34 +5,10 @@
 import type { Mat4, Vec3 } from "mv-redux";
 import type Light from "../primitives/light";
 import type { LightType } from "../primitives/light";
-import type { ShaderInterface, BindGroupInfo } from "./generic";
-import { MAT4_SIZE, VEC3_SIZE, writeVec3, writeMat4 } from "./generic";
+import { ShaderABI, MAT4_SIZE, VEC3_SIZE, writeVec3, writeMat4 } from "./generic";
 
-export interface EngineBindGroupInfo extends BindGroupInfo {
-  buffers: {
-    rendererBuffer: GPUBuffer;
-    worldBuffer: GPUBuffer;
-    lightBuffer: GPUBuffer;
-  }
-}
 
-export interface EngineShaderInterface extends ShaderInterface {
-  setupBindGroup(device: GPUDevice): EngineBindGroupInfo;
-  passData(
-    device: GPUDevice,
-    pass: GPURenderPassEncoder,
-    engineBindGroupSetup: EngineBindGroupInfo,
-    lights: [Light, Vec3, Vec3][],
-    renderer: RendererData,
-    worldMat: Mat4,
-  ): void;
-}
-// TODO: Is this the best place for this to live
-export type RendererData = {
-  ambientLight: Vec3;
-  viewProjection: Mat4;
-}
-
+// Constants
 /** The byte size of the light struct. */
 const LIGHT_STRUCT_BYTE_SIZE = 64;
 /** The byte size of the light buffer header. */
@@ -45,6 +21,14 @@ const LIGHT_BUFFER_SIZE = LIGHT_BUFFER_HEADER_SIZE + LIGHT_STRUCT_BYTE_SIZE * MA
 const RENDERER_BUFFER_SIZE = 16 + MAT4_SIZE; // ambient_light (16 bytes) + viewProjection (64 bytes)
 /** The size of the world buffer. */
 const WORLD_BUFFER_SIZE = MAT4_SIZE; // 4x4 matrix of 4 byte values
+
+// Encoding
+
+// TODO: Is this the best place for this to live
+export type RendererData = {
+  ambientLight: Vec3;
+  viewProjection: Mat4;
+}
 
 /** Encodes the light type into a uint32. */
 const encodeLightType = (type: LightType): number => {
@@ -110,111 +94,108 @@ const packRendererData = (renderer: RendererData): ArrayBuffer => {
   return buffer;
 }
 
-/** Passes the data to the GPU. */
-const passData = (
-  // WebGPU Context
-  device: GPUDevice,
-  pass: GPURenderPassEncoder,
-  engineBindGroupSetup: EngineBindGroupInfo,
-  // Dynamic Data
-  lights: [Light, Vec3, Vec3][],
-  renderer: RendererData,
-  worldMat: Mat4,
-) => {
-  const { bindGroup, buffers: { rendererBuffer, worldBuffer, lightBuffer } } = engineBindGroupSetup;
+/** This class is responsible for managing the binary interface with the GPU. */
+export default class EngineShaderABI extends ShaderABI {
+  public BindGroup: GPUBindGroup;
+  public BindGroupLayout: GPUBindGroupLayout;
 
-  // Pack the renderer data and send it to the GPU
-  const rawRendererBuffer = packRendererData(renderer);
-  device.queue.writeBuffer(rendererBuffer, 0, rawRendererBuffer);
-  // Pack the world matrix and send it to the GPU
-  const rawWorldBuffer = new ArrayBuffer(WORLD_BUFFER_SIZE);
-  writeMat4(worldMat, rawWorldBuffer, 0);
-  device.queue.writeBuffer(worldBuffer, 0, rawWorldBuffer);
-  // Pack the light data and send it to the GPU
-  const rawLightBuffer = packLightData(lights);
-  device.queue.writeBuffer(lightBuffer, 0, rawLightBuffer);
+  public rendererBuffer: GPUBuffer;
+  public worldBuffer: GPUBuffer;
+  public lightBuffer: GPUBuffer;
 
-  // Bind the bindGroup to the pass
-  pass.setBindGroup(0, bindGroup);
-}
+  constructor(device: GPUDevice) {
+    super(device);
+    // Create our buffers
+    const rendererBuffer = device.createBuffer({
+      size: RENDERER_BUFFER_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    const worldBuffer = device.createBuffer({
+      size: WORLD_BUFFER_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    const lightBuffer = device.createBuffer({
+      size: LIGHT_BUFFER_SIZE,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
 
-/** Sets up the bind group for the GPU. */
-const setupBindGroup = (device: GPUDevice): EngineBindGroupInfo => {
-  // Create our buffers
-  const rendererBuffer = device.createBuffer({
-    size: RENDERER_BUFFER_SIZE,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  const worldBuffer = device.createBuffer({
-    size: WORLD_BUFFER_SIZE,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  const lightBuffer = device.createBuffer({
-    size: LIGHT_BUFFER_SIZE,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-
-  // Construct our bind group layout
-  const bindGroupLayout = device.createBindGroupLayout({
-    entries: [
-      // Renderer
-      {
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
-        buffer: {
-          type: 'uniform',
+    // Construct our bind group layout
+    const bindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        // Renderer
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform',
+          },
         },
-      },
-      // World
-      {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
-        buffer: {
-          type: 'uniform',
+        // World
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform',
+          },
         },
-      },
-      // Light Buffer
-      {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
-        buffer: {
-          type: 'read-only-storage',
+        // Light Buffer
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'read-only-storage',
+          },
         },
-      },
-    ],
-  });
-  // Construct our actual bind group
-  const bindGroup = device.createBindGroup({
-    layout: bindGroupLayout,
-    entries: [
-      {
-        binding: 0,
-        resource: { buffer: rendererBuffer },
-      },
-      {
-        binding: 1,
-        resource: { buffer: worldBuffer },
-      },
-      {
-        binding: 2,
-        resource: { buffer: lightBuffer },
-      },
-    ],
-  });
+      ],
+    });
+    // Construct our actual bind group
+    const bindGroup = device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: rendererBuffer },
+        },
+        {
+          binding: 1,
+          resource: { buffer: worldBuffer },
+        },
+        {
+          binding: 2,
+          resource: { buffer: lightBuffer },
+        },
+      ],
+    });
 
-  return {
-    bindGroup,
-    bindGroupLayout,
-    buffers: {
-      rendererBuffer,
-      worldBuffer,
-      lightBuffer,
-    }
-  };
-}
+    // Store the bind group and layout in the class
+    this.BindGroup = bindGroup;
+    this.BindGroupLayout = bindGroupLayout;
+    
+    // Store the buffers in the class
+    this.rendererBuffer = rendererBuffer;
+    this.worldBuffer = worldBuffer;
+    this.lightBuffer = lightBuffer;
+  }
 
-const shaderInterface: EngineShaderInterface = {
-  setupBindGroup,
-  passData,
+  public passData(
+    device: GPUDevice,
+    pass: GPURenderPassEncoder,
+    lights: [Light, Vec3, Vec3][],
+    renderer: RendererData,
+    worldMat: Mat4,
+  ): void {
+    // Pack the renderer data and send it to the GPU
+    const rawRendererBuffer = packRendererData(renderer);
+    device.queue.writeBuffer(this.rendererBuffer, 0, rawRendererBuffer);
+    // Pack the world matrix and send it to the GPU
+    const rawWorldBuffer = new ArrayBuffer(WORLD_BUFFER_SIZE);
+    writeMat4(worldMat, rawWorldBuffer, 0);
+    device.queue.writeBuffer(this.worldBuffer, 0, rawWorldBuffer);
+    // Pack the light data and send it to the GPU
+    const rawLightBuffer = packLightData(lights);
+    device.queue.writeBuffer(this.lightBuffer, 0, rawLightBuffer);
+
+    // Bind the bindGroup to the pass
+    pass.setBindGroup(0, this.BindGroup);
+  }
 }
-export default shaderInterface; 

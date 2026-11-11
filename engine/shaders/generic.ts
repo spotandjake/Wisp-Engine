@@ -3,19 +3,10 @@ import type { Mat4, Vec3, Vec2 } from "mv-redux";
 
 // Types
 // =========================
-export interface BindGroupInfo {
-  bindGroup: GPUBindGroup;
-  bindGroupLayout: GPUBindGroupLayout;
-  buffers: { [key: string]: GPUBuffer };
-}
-// export abstract class ShaderABI {
-//   public abstract readonly BindGroup: GPUBindGroup;
-//   public abstract readonly BindGroupLayout: GPUBindGroupLayout;
-//   constructor(device: GPUDevice) {}
-// }
-export interface ShaderInterface {
-  setupBindGroup(device: GPUDevice): BindGroupSetup;
-  [key: string]: unknown;
+export abstract class ShaderABI {
+  public abstract BindGroup: GPUBindGroup;
+  public abstract BindGroupLayout: GPUBindGroupLayout;
+  constructor(device: GPUDevice) {}
 }
 
 // Constants

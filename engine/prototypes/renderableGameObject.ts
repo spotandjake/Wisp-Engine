@@ -7,8 +7,8 @@ import { EmptyGeometryError, InvalidGeometryError } from "../internal/errors";
 import GameObject from "./gameObject";
 import type Light from "../primitives/light";
 
-import engineShaderABI, { type EngineBindGroupInfo } from "../shaders/engine";
-import defaultShaderABI, { type DefaultBindGroupInfo } from "../shaders/default";
+import EngineShaderABI from "../shaders/engine";
+import DefaultShaderABI from "../shaders/default";
 
 import Shader from "../shaders/default.wesl?static";
 
@@ -32,9 +32,9 @@ type RenderableGameObjectContext = {
     indices?: RenderableGameObjectContextIndices;
   };
   /** The engine bind group info for the game object. */
-  engineBindGroupInfo: EngineBindGroupInfo;
+  engineShaderABI: EngineShaderABI;
   /** The default bind group info for the game object. */
-  defaultBindGroupInfo: DefaultBindGroupInfo;
+  defaultShaderABI: DefaultShaderABI;
 };
 
 /** A game object that can be rendered. */
@@ -124,17 +124,17 @@ class RenderableGameObject extends GameObject {
     const shaderModule = context.device.createShaderModule({ code: Shader, });
 
     // Create the model's uniform buffer and bind group
-    const defaultBindGroupInfo = defaultShaderABI.setupBindGroup(context.device);
+    const defaultShaderABI = new DefaultShaderABI(context.device);
     // Create the engine's uniforms and bind groups
-    const engineBindGroupInfo = engineShaderABI.setupBindGroup(context.device);
+    const engineShaderABI = new EngineShaderABI(context.device);
 
     // Construct our pipeline layout
     const pipelineLayout = context.device.createPipelineLayout({
       bindGroupLayouts: [
         // Engine bindings
-        engineBindGroupInfo.bindGroupLayout,
+        engineShaderABI.BindGroupLayout,
         // User supplied bindings
-        defaultBindGroupInfo.bindGroupLayout,
+        defaultShaderABI.BindGroupLayout,
       ],
     });
 
@@ -197,8 +197,8 @@ class RenderableGameObject extends GameObject {
         normalBuffer,
         indices: indices
       },
-      engineBindGroupInfo: engineBindGroupInfo,
-      defaultBindGroupInfo: defaultBindGroupInfo,
+      engineShaderABI: engineShaderABI,
+      defaultShaderABI: defaultShaderABI,
     };
     // Caches
     this._renderContext = renderContext;
@@ -230,10 +230,9 @@ class RenderableGameObject extends GameObject {
     pass.setPipeline(renderContext.gpuRenderPipeline);
 
     // Pass the data to the GPU using the engine shader ABI.
-    engineShaderABI.passData(
+    renderContext.engineShaderABI.passData(
       context.device,
       pass,
-      renderContext.engineBindGroupInfo,
       lights,
       // TODO: Move this to the renderer and pass it in as a parameter
       {
@@ -243,10 +242,9 @@ class RenderableGameObject extends GameObject {
       worldMatrix
     );
     // Pass the data to the GPU using the default shader ABI.
-    defaultShaderABI.passData(
+    renderContext.defaultShaderABI.passData(
       context.device,
       pass,
-      renderContext.defaultBindGroupInfo,
       model
     );
 
