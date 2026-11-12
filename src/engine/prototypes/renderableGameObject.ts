@@ -4,14 +4,15 @@ import type { Arrays, ShaderDataDefinitions } from "webgpu-utils";
 import type { RendererContext } from "../renderer";
 import type { Geometry } from "../geometry";
 import type Light from "../primitives/light";
+import Material from "./material";
 
 import { vec3 } from "mv-redux";
 import { EmptyGeometryError } from "../internal/errors";
 import { makeShaderDataDefinitions, createBuffersAndAttributesFromArrays, makeBindGroupLayoutDescriptors } from "webgpu-utils";
 import GameObject from "./gameObject";
 
-import EngineShaderABI from "../shaders/engine";
-import DefaultShaderABI from "../shaders/default";
+import engineShaderAbi from "../shaders/engine";
+import defaultShaderAbi from "../shaders/default";
 
 import Shader from "../shaders/default.wesl?static";
 
@@ -27,8 +28,11 @@ const getShaderModuleAndDefs = (device: GPUDevice): { shaderModule: GPUShaderMod
 
 /** A game object that can be rendered. */
 class RenderableGameObject extends GameObject {
-  constructor(position: Vec3, rotation: Vec3, scale: Vec3) {
+  private material: Material;
+
+  constructor(position: Vec3, rotation: Vec3, scale: Vec3, material: Material) {
     super(position, rotation, scale);
+    this.material = material;
   }
   // Abstract methods
   /**
@@ -75,7 +79,7 @@ class RenderableGameObject extends GameObject {
     let attributeBuffers: Arrays = {
       positions: geometry.positions,
       normals: geometry.normals,
-      colors: geometry.colors !== undefined ? geometry.colors : new Float32Array(vertexCount * 4),
+      colors: geometry.colors !== undefined ? geometry.colors : new Float32Array(vertexCount * 4).fill(1),
       uvs: geometry.uvs !== undefined ? geometry.uvs : new Float32Array(vertexCount * 2),
     };
     if (geometry.indices !== undefined) attributeBuffers = { ...attributeBuffers, indices: geometry.indices};
@@ -117,34 +121,31 @@ class RenderableGameObject extends GameObject {
       },
     });
 
-    // Create our shader ABIs
-    const defaultShaderABI = new DefaultShaderABI(context.device, defs, groupLayouts);
-    const engineShaderABI = new EngineShaderABI(context.device, defs, groupLayouts);
-
     // Record the draw commands.
     pass.setPipeline(pipeline);
 
     // Pass the data to the GPU using our shader ABIs.
-    engineShaderABI.passData(
-      context.device,
-      pass,
-      lights,
-      // TODO: We should make this a property of the geometry???
+    const baseShaderAbiInput = { device: context.device, defs, layouts: groupLayouts, pass };
+    engineShaderAbi(
+      baseShaderAbiInput,
       {
-        shininess: 32.0,
-        use_vertex_colors: geometry.colors !== undefined,
-        use_base_color_texture: false,
-      },
-      // TODO: Move this to the renderer and pass it in as a parameter
-      {
-        ambientLight: vec3(0.2, 0.2, 0.2),
-        cameraPosition: cameraPosition,
-        viewProjection: viewProjectionMatrix,
-      },
-      worldMatrix
+        lights,
+        material: this.material,
+        renderer: {
+          ambient_light: vec3(0.2, 0.2, 0.2),
+          camera_position: cameraPosition,
+          view_projection: viewProjectionMatrix
+        },
+        worldMat: worldMatrix
+      }
     );
-    const model = this.getModelMatrix();
-    defaultShaderABI.passData(context.device, pass, model);
+
+    defaultShaderAbi(
+      baseShaderAbiInput,
+      {
+        modelMatrix: this.getModelMatrix()
+      }
+    );
 
     // Bind the vertex shader attributes
     pass.setVertexBuffer(0, attributes.buffers[0]);

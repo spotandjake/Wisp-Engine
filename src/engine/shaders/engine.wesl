@@ -10,6 +10,10 @@ var<uniform> world: World;
 var<storage, read> lightBuffer: LightBuffer;
 @group(0) @binding(3)
 var<uniform> material: Material;
+@group(0) @binding(4)
+var base_texture: texture_2d<f32>;
+@group(0) @binding(5)
+var base_sampler: sampler;
 
 // Renderer
 // =========================
@@ -73,12 +77,12 @@ struct LightBuffer {
  * will be white (1, 1, 1, 1) and the object will be lit by the lights in the scene.
  */
 struct Material {
-  // Blinn-Phong properties
-  shininess: f32,
-  /** Whether to use vertex colors. (1 = true, 0 = false) */
-  use_vertex_colors: u32,
-  /** Whether to use a base color texture. (1 = true, 0 = false) */
-  use_base_color_texture: u32,
+  /** The base color the material itself. */
+  base_color: vec4<f32>,
+  /** Weather or not the material has a texture. */
+  has_texture: u32,
+  /** How shiny the material is. */
+  shininess: f32
 }
 
 /**

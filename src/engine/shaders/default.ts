@@ -1,53 +1,55 @@
-// This file contains the code for talking to the default shader on the gpu, it's located here so it's close to the definitions in `default.wesl` as it must stay in sync with it.
+// This file contains the default shader ABI, which is used to interface with the default shader. It provides a way to set up the necessary data and resources for rendering objects in the scene, we keep it next to the shader code so that we can keep it in sync with the shader code.
 import type { Mat4 } from "mv-redux";
-import type { ShaderDataDefinitions, StructuredView } from "webgpu-utils";
+import type { StructuredView } from "webgpu-utils";
+import type { StandardShaderAbiInput, StructView } from "./generic";
+
 import { makeStructuredView } from "webgpu-utils";
-import { ShaderABI } from "./generic";
 
-/** This class is responsible for managing the binary interface with the GPU. */
-export default class DefaultShaderABI extends ShaderABI {
-  /** A structured view for the gpu's model struct. */
-  private ModelView: Omit<StructuredView, "set"> & {
-    set: (data: { matrix: Mat4 }) => void;
-  };
-  /** The binding group of the default shader. */
-  protected BindGroup: GPUBindGroup;
-  /** The buffer for the model struct. */
-  private ModelBuffer: GPUBuffer;
+// The bind group index for the default shader's bind group.
+const BIND_GROUP = 1;
 
-  constructor(
-    device: GPUDevice,
-    defs: ShaderDataDefinitions,
-    layouts: GPUBindGroupLayout[],
-  ) {
-    super(device, defs, layouts);
-    // Construct our model view
-    this.ModelView = makeStructuredView(defs.uniforms.model);
-    // Create our buffer
-    this.ModelBuffer = device.createBuffer({
-      size: this.ModelView.arrayBuffer.byteLength,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    // Construct our actual bind group
-    this.BindGroup = device.createBindGroup({
-      layout: layouts[1],
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.ModelBuffer },
-        },
-      ],
-    });
-  }
-
-  public passData(
-    device: GPUDevice,
-    pass: GPURenderPassEncoder,
-    modelMatrix: Mat4,
-  ): void {
-    // Set the model matrix in the structured view and write it to the GPU buffer
-    this.ModelView.set({ matrix: modelMatrix });
-    device.queue.writeBuffer(this.ModelBuffer, 0, this.ModelView.arrayBuffer);
-    pass.setBindGroup(1, this.BindGroup);
-  }
+// Default Shader ABI
+// ============================
+/** The input for the default shader ABI. */
+export interface DefaultShaderAbiInput {
+  /** The world matrix to use for the engine shader. */
+  modelMatrix: Mat4;
 }
+/** The interface for the engine shader ABI. */
+export default (
+  { device, defs, layouts, pass }: StandardShaderAbiInput,
+  { modelMatrix }: DefaultShaderAbiInput,
+) => {
+  // Create our structured views
+  const modelStructView = makeStructuredView(
+    defs.uniforms.model,
+  ) as StructView<{ matrix: Mat4 }>;
+
+  // Create our buffers
+  const getViewSize = (view: StructuredView) => view.arrayBuffer.byteLength;
+  const defaultUsage = GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST;
+  const modelStructBuffer = device.createBuffer({
+    size: getViewSize(modelStructView),
+    usage: defaultUsage,
+  });
+
+  // Construct the actual bind group
+  const bindings = [modelStructBuffer];
+  const bindGroup = device.createBindGroup({
+    layout: layouts[BIND_GROUP],
+    entries: [
+      // Pass our buffers
+      ...bindings.map((b, i) => ({ binding: i, resource: { buffer: b } })),
+    ],
+  });
+
+  const getBuff = (view: StructuredView) => view.arrayBuffer;
+  // Set the renderer data in the structured view and write it to the GPU buffer
+  modelStructView.set({
+    matrix: modelMatrix,
+  });
+  device.queue.writeBuffer(modelStructBuffer, 0, getBuff(modelStructView));
+
+  // Bind the bind group to the render pass
+  pass.setBindGroup(BIND_GROUP, bindGroup);
+};

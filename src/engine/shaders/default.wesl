@@ -1,5 +1,12 @@
 // Import the engine module for the primitives helpers and types
-import super::engine::{ renderer, world, apply_fragment_lighting, material };
+import super::engine::{ 
+  renderer,
+  world,
+  material,
+  base_texture,
+  base_sampler,
+  apply_fragment_lighting
+};
 
 // Bind our uniforms
 @group(1) @binding(0)
@@ -40,7 +47,6 @@ struct VertexOutput {
 /** The vertex shader, takes a VertexInput and returns a VertexOutput. */
 @vertex
 fn vertex_main(input: VertexInput) -> VertexOutput {
-  // TODO: Consider moving some of this stuff to a function in the engine to avoid duplication across shaders.
   // Compute the position
   let world_model_position = world.matrix * model.matrix;
   let world_position = world_model_position * vec4<f32>(input.position, 1.0);
@@ -61,22 +67,25 @@ fn vertex_main(input: VertexInput) -> VertexOutput {
 @fragment
 fn fragment_main(input: VertexOutput) -> @location(0) vec4<f32> {
   // Use the engine to compute the lighting
-  let lighting = apply_fragment_lighting(input.worldPosition, normalize(input.normal));
-  // Determine the coloring of the fragment based on the useColor flag
-  var color: vec4<f32>;
-  // If no coloring is chosen then we default to white
-  if (material.use_vertex_colors == 0u && material.use_base_color_texture == 0u) {
-    color = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+  let lighting = apply_fragment_lighting(
+    input.worldPosition, 
+    normalize(input.normal)
+  );
+  // Get the texture color if needed
+  var texture_color = vec4<f32>(1.0);
+  if (material.has_texture == 1u) {
+    texture_color = textureSample(
+      base_texture,
+      base_sampler,
+      input.uv
+    );
   }
-  // If the base color is choosen then we use the base color texture
-  if (material.use_vertex_colors == 1u) {
-    color = input.color;
-  }
-  // TODO: Handle textures
-  // // If the base color texture is choosen then we use the base color texture
-  // if (material.use_base_color_texture == 1u) {
-  //   color = textureSample(baseColorTexture, baseColorSampler, input.uv);
-  // }
+
+  // Compute the final color of the fragment based on the material properties
+  let color = material.base_color * input.color * texture_color;
+ 
+  // Apply the lighting
+  let final_color = color * vec4<f32>(lighting, 1.0);
   // Apply the lighting to the scene
-  return color * vec4<f32>(lighting, 1.0);
+  return final_color;
 }

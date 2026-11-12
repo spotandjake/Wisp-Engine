@@ -1,5 +1,22 @@
 import { vec3, vec4 } from "mv-redux";
 import { WebGpuUnavailableError } from './engine/internal/errors';
+// Engine
+import Renderer, { RendererUpdateEvent } from './engine/renderer';
+import Controller from './engine/controller';
+import GameObject from './engine/prototypes/gameObject';
+import Material from './engine/prototypes/material';
+// Behaviors
+import ControllableBehavior from './engine/behaviors/controllable';
+import SliderBehavior from './behaviors/slider';
+// Models
+import World from './engine/primitives/world';
+import Camera from './engine/primitives/camera';
+import Plane from './engine/primitives/plane';
+import Light, { LightType } from './engine/primitives/light';
+import Player from './objects/player';
+import House from './objects/house';
+
+// import Cube from './engine/primitives/cube';
 
 // Get our dom items
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
@@ -12,23 +29,6 @@ const cameraZ = document.getElementById('cz') as HTMLInputElement;
 const cameraRotX = document.getElementById('cRotx') as HTMLInputElement;
 const cameraRotY = document.getElementById('cRoty') as HTMLInputElement;
 const cameraRotZ = document.getElementById('cRotz') as HTMLInputElement;
-
-// Engine
-import Renderer, { RendererUpdateEvent } from './engine/renderer';
-import Controller from './engine/controller';
-// Behaviors
-import ControllableBehavior from './engine/behaviors/controllable';
-import SliderBehavior from './behaviors/slider';
-// Models
-import GameObject from './engine/prototypes/gameObject';
-import World from './engine/primitives/world';
-import Camera from './engine/primitives/camera';
-import Plane from './engine/primitives/plane';
-import Light, { LightType } from './engine/primitives/light';
-import Player from './objects/player';
-import House from './objects/house';
-
-import Cube from './engine/primitives/cube';
 
 // Setup our renderer
 let renderer: Renderer;
@@ -71,7 +71,8 @@ const ground = new Plane(
   vec3(-500, 0, -500),
   vec3(0, 0, 0),
   vec3(1000, 1, 1000),
-  vec4(0, 1, 0, 1)
+  // Grass Green ground
+  new Material(vec4(0.0, 1.0, 0.0, 1.0), false, 32)
 );
 world.addChild(ground);
 const house = new House(

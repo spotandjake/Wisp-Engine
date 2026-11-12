@@ -1,4 +1,3 @@
 edition = "2026_pre"
 include = [ "./src/engine/shaders/**/*.wesl" ]
 root = "./src/engine/shaders"
-dependencies = "auto"

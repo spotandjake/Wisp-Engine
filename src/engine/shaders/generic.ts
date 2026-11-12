@@ -1,13 +1,19 @@
-// Generic utilities and constants for gpu communication
-import type { ShaderDataDefinitions } from "webgpu-utils";
+// Generic types for shaders and shader ABIs.
+import type { ShaderDataDefinitions, StructuredView } from "webgpu-utils";
 
-/** The base class for all shader ABIs. */
-export abstract class ShaderABI {
-  protected abstract BindGroup: GPUBindGroup;
-  constructor(
-    device: GPUDevice,
-    defs: ShaderDataDefinitions,
-    layouts: GPUBindGroupLayout[],
-  ) {}
-  // NOTE: Sadly I don't have a good way of enforcing passData because each shader ABI will have different data to pass, so we just leave it up to the implementer to ensure they are passing the correct data.
+/** The standard input for a shader ABI. */
+export interface StandardShaderAbiInput {
+  /** The GPU device to use for rendering. */
+  device: GPUDevice;
+  /** The definitions for the shader data. */
+  defs: ShaderDataDefinitions;
+  /** The layouts for the bind groups. */
+  layouts: GPUBindGroupLayout[];
+  /** The render pass to use for the engine shader. */
+  pass: GPURenderPassEncoder;
 }
+
+/** A structured view of a specific shader data type. */
+export type StructView<T> = Omit<StructuredView, "set"> & {
+  set: (data: T) => void;
+};
