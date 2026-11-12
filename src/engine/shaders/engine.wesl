@@ -11,7 +11,28 @@ var<storage, read> lightBuffer: LightBuffer;
 @group(0) @binding(3)
 var<uniform> material: Material;
 
-// Lighting datatype's
+// Renderer
+// =========================
+/** Common renderer related attributes. */
+struct Renderer {
+  /** The ambient light in the scene. */
+  ambient_light: vec3<f32>,
+  /** The position of the camera in the scene. */
+  camera_position: vec3<f32>,
+  /** The view projection matrix of the camera. */
+  view_projection: mat4x4<f32>,
+}
+
+// World
+// =========================
+/** The world attributes for the scene. */
+struct World {
+  /** The world matrix for the scene (accumulated transforms of all parent objects) */
+  matrix: mat4x4<f32>,
+}
+
+
+// Lighting
 // =========================
 /** The type of a light in our scene. */
 alias Light_Type = u32; // 0 = directional, 1 = point
@@ -58,26 +79,6 @@ struct Material {
   use_vertex_colors: u32,
   /** Whether to use a base color texture. (1 = true, 0 = false) */
   use_base_color_texture: u32,
-}
-
-// Renderer related datatypes
-// =========================
-/** Common renderer related attributes. */
-struct Renderer {
-  /** The ambient light in the scene. */
-  ambient_light: vec3<f32>,
-  /** The position of the camera in the scene. */
-  camera_position: vec3<f32>,
-  /** The view projection matrix of the camera. */
-  view_projection: mat4x4<f32>,
-}
-
-// World related datatypes
-// =========================
-/** The world attributes for the scene. */
-struct World {
-  /** The world matrix for the scene (accumulated transforms of all parent objects) */
-  matrix: mat4x4<f32>,
 }
 
 /**

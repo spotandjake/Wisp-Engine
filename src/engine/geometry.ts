@@ -1,4 +1,3 @@
-// TODO: Figure out if this is what we actually want
 /** A representation of a 3D geometric shape. */
 export type Geometry = {
   /** Vertex positions (x, y, z). */

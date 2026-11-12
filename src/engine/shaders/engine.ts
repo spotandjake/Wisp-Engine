@@ -1,6 +1,4 @@
 // This file contains the code for talking to the engine shader on the gpu, it's located here so it's close to the definitions in `engine.wesl` as it must stay in sync with it.
-
-// TODO: I think we need to clean up this file and make it more clear what is going on here
 import type { Mat4, Vec3 } from "mv-redux";
 import type { ShaderDataDefinitions, StructuredView } from "webgpu-utils";
 import type Light from "../primitives/light";
