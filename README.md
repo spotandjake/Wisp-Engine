@@ -23,6 +23,7 @@ This project is built using minimal dependencies however a list of them and what
 * `vite` - A build time framework allowing for interactive development.
 * `wesl-plugin` - A vite plugin for [Wesl](https://wesl-lang.dev/docs/Getting-Started) which is a superset of WGSL implementing a module system.
 * `mv-redux` - Basic vector and matrix operations.
+* [`webgpu-utils`](https://www.npmjs.com/package/webgpu-utils) - A basic abstraction library similar to mv redux to simplify common webgpu abstractions.
 
 ## Architecture
 

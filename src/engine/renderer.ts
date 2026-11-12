@@ -1,4 +1,4 @@
-import { type Vec3, type Mat4, vec3, mult, mat4 } from "mv-redux";
+import { type Vec3, type Mat4, vec3, mult, mat4, inverse } from "mv-redux";
 import { WebGpuUnavailableError } from "./internal/errors";
 import type GameObject from "./prototypes/gameObject";
 import RenderableGameObject from "./prototypes/renderableGameObject";
@@ -174,22 +174,28 @@ class Renderer extends EventTarget {
     // We default to using the camera's position and rotation in local space, 
     // but we will update these values if we find the camera in the scene graph.
     let cameraPosition: Vec3 = this.camera.position;
-    let cameraRotation: Vec3 = this.camera.rotation;
+    let cameraWorldMatrix: Mat4 = this.camera.getModelMatrix();
     while (workQueue.length > 0) {
       const { obj, worldMatrix } = workQueue.pop()!;
+      const modelMatrix = obj.getModelMatrix();
+      const childWorldMatrix = mult(worldMatrix, modelMatrix);
       // If this object is a camera, store the camera position for later use (While we have a reference this is the only way to get the camera position in world space)
       if (obj instanceof Camera && obj === this.camera) {
-        // Extract the camera position from the world matrix (This is the only way to get the camera position in world space)
-        cameraPosition = vec3(worldMatrix[3][0], worldMatrix[3][1], worldMatrix[3][2]);
-        cameraRotation = vec3(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2]);
+        // NOTE: We need the position in world space, so we extract it from the world matrix.
+        cameraPosition = vec3(childWorldMatrix[3][0], childWorldMatrix[3][1], childWorldMatrix[3][2]);
+        cameraWorldMatrix = childWorldMatrix;
       }
       // If the object is a light, store the light data for later use
       if (obj instanceof Light) {
+        // TODO: Validate this coordinate math
+        const rotationY = Math.asin(Math.max(-1, Math.min(1, childWorldMatrix[2][0])));
+        const rotationX = Math.atan2(-childWorldMatrix[2][1], childWorldMatrix[2][2]);
+        const rotationZ = Math.atan2(-childWorldMatrix[1][0], childWorldMatrix[0][0]);
         lightBuffer.push([
           obj,
           // Extract the position and direction from the world matrix
-          vec3(worldMatrix[3][0], worldMatrix[3][1], worldMatrix[3][2]),
-          vec3(worldMatrix[0][2], worldMatrix[1][2], worldMatrix[2][2])
+          vec3(childWorldMatrix[3][0], childWorldMatrix[3][1], childWorldMatrix[3][2]),
+          vec3(rotationX, rotationY, rotationZ)
         ]);
       }
       // If the object is render add it to the render queue
@@ -197,14 +203,12 @@ class Renderer extends EventTarget {
         renderQueue.push({ obj, worldMatrix });
       }
       // Add the object's children to the work queue
-      const modelMatrix = obj.getModelMatrix();
-      const childWorldMatrix = mult(worldMatrix, modelMatrix);
       for (const child of obj.children) {
         workQueue.push({ obj: child, worldMatrix: childWorldMatrix });
       }
     }
     // Get the camera's view and projection matrices in world space
-    const viewMatrix: Mat4 = Camera.getViewMatrix(cameraPosition, cameraRotation);
+    const viewMatrix: Mat4 = inverse(cameraWorldMatrix);
     const projectionMatrix: Mat4 = this.camera.getProjectionMatrix();
     const viewProjectionMatrix: Mat4 = mult(projectionMatrix, viewMatrix);
     // Render the objects in the render queue

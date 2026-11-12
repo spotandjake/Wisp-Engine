@@ -52,18 +52,6 @@ class Camera extends GameObject {
       0, 0, this.near * this.far * rangeInv, 0
     );
   }
-  /** Returns the view matrix for this camera. */
-  public static getViewMatrix(worldPosition: Vec3, worldRotation: Vec3): Mat4 {
-    const translation = translationMatrix(worldPosition);
-    const rotationX = rotationMatrix("x", worldRotation.x);
-    const rotationY = rotationMatrix("y", worldRotation.y);
-    const rotationZ = rotationMatrix("z", worldRotation.z);
-    const cameraMatrix = mult(
-      translation,
-      mult(rotationZ, mult(rotationY, rotationX)),
-    );
-    return inverse(cameraMatrix);
-  }
 }
 
 export default Camera;

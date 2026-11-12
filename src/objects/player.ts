@@ -5,7 +5,7 @@ import Cube from "../engine/primitives/cube";
 
 // TODO: Controllable is controlling the camera right now it should control the player and then pass it's data around a bit better.
 class Player extends GameObject {
-  private camera?: Camera;
+  public readonly head: GameObject;
 
   constructor(
     // Default GameObject properties
@@ -17,10 +17,9 @@ class Player extends GameObject {
   ) {
     super(position, rotation, scale);
     // NOTE: These offsets are magic numbers, from trial and error of what looks good.
-    this.camera = camera;
 
     // Create body parts
-    const head = new Cube(
+    this.head = new Cube(
       vec3(0, 0, 0),
       vec3(0, 0, 0),
       vec3(1, 1, 1),
@@ -33,6 +32,7 @@ class Player extends GameObject {
         vec4(1, 0, 0, 1), // Red
       ]
     );
+    this.addChild(this.head);
     const body = new Cube(
       vec3(-0.125, -1, 0.05), // (1.25 - 1)/2 = 0.125, -1 (under body), (1-0.9) / 2 = 0.05
       vec3(0, 0, 0),
@@ -46,6 +46,7 @@ class Player extends GameObject {
         vec4(0, 1, 0, 1), // Green
       ]
     );
+    this.addChild(body);
     // Arms
     for (let i = 0; i < 2; i++) {
       // The right is 1.125, 1.25(body) - (0.5arm)/2 = 1.125
@@ -82,9 +83,6 @@ class Player extends GameObject {
       );
       this.addChild(leg);
     }
-
-    this.addChild(head);
-    this.addChild(body);
   }
 }
 

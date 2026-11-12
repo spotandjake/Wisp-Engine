@@ -23,7 +23,8 @@
     "wesl-plugin": "^0.6.81"
   },
   "dependencies": {
-    "mv-redux": "^0.1.9"
+    "mv-redux": "^0.1.9",
+    "webgpu-utils": "^2.1.1"
   },
   "allowScripts": {
     "esbuild": true

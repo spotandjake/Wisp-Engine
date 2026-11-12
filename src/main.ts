@@ -109,7 +109,7 @@ const flashLight = new Light(
   100.0
 );
 const playerCamera = new Camera(
-  vec3(0, 10, 0),
+  vec3(0, 0, 0),
   vec3(0, 0, 0),
   canvas.width / canvas.height
 );
@@ -119,8 +119,9 @@ const player = new Player(
   vec3(1, 1, 1),
   playerCamera
 );
-player.addChild(playerCamera);
+player.head.addChild(playerCamera);
 player.addChild(flashLight);
+// TODO: We need to make a behavior specifically for the player as the player is a special case where rotation should be applied to the player and camera, but movement should only be applied to the player.
 player.addBehavior(controllableBehavior);
 world.addChild(player);
 
