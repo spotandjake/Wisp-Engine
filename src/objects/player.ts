@@ -1,88 +1,152 @@
+// A simple minecraft style player object that can be controlled by a player controller.
 import { type Vec3, vec3, vec4 } from "mv-redux";
+import type Renderer from "../engine/renderer";
 import GameObject from "../engine/prototypes/gameObject";
 import Camera from "../engine/primitives/camera";
-import Cube from "../engine/primitives/cube";
+import Cube, { type FaceColors } from "../engine/primitives/cube";
 
-// TODO: Controllable is controlling the camera right now it should control the player and then pass it's data around a bit better.
 class Player extends GameObject {
-  public readonly head: GameObject;
+  public readonly headPivot: GameObject;
+  public readonly camera: Camera;
 
   constructor(
-    // Default GameObject properties
     position: Vec3,
     rotation: Vec3,
     scale: Vec3,
-    // Player specific properties
-    camera?: Camera
+    camera: Camera
   ) {
     super(position, rotation, scale);
-    // NOTE: These offsets are magic numbers, from trial and error of what looks good.
+    this.camera = camera;
 
-    // Create body parts
-    this.head = new Cube(
+    // Player dimensions
+    const dimensions = {
+      head: {
+        width: 1,
+        height: 1,
+        depth: 1,
+      },
+      body: {
+        width: 1.25,
+        height: 1.5,
+        depth: 0.9,
+      },
+      arm: {
+        width: 0.5,
+        height: 1.5,
+        depth: 0.5,
+      },
+      leg: {
+        width: 0.5,
+        height: 1.5,
+        depth: 0.5,
+      },
+    };
+
+    const { head, body, arm, leg } = dimensions;
+
+    // Derived dimensions
+    const bodyCenter = {
+      x: 0,
+      y: leg.height + body.height / 2,
+      z: 0,
+    };
+
+    const armOffset = body.width / 2 + arm.width / 2;
+    const legOffset = body.width / 2 - leg.width / 2;
+
+    // Colors
+    const faces = (r: number, g: number, b: number): FaceColors => [
+      vec4(r, g, b, 1),
+      vec4(r, g, b, 1),
+      vec4(r, g, b, 1),
+      vec4(r, g, b, 1),
+      vec4(r, g, b, 1),
+      vec4(r, g, b, 1),
+    ];
+
+    // Head pivot: rotates around the center of the head.
+    this.headPivot = new GameObject(
+      vec3(
+        0,
+        leg.height + head.height / 2,
+        0
+      ),
       vec3(0, 0, 0),
-      vec3(0, 0, 0),
-      vec3(1, 1, 1),
-      [
-        vec4(1, 0, 0, 1), // Red
-        vec4(1, 0, 0, 1), // Red
-        vec4(1, 0, 0, 1), // Red
-        vec4(1, 0, 0, 1), // Red
-        vec4(1, 0, 0, 1), // Red
-        vec4(1, 0, 0, 1), // Red
-      ]
+      vec3(1, 1, 1)
     );
-    this.addChild(this.head);
-    const body = new Cube(
-      vec3(-0.125, -1, 0.05), // (1.25 - 1)/2 = 0.125, -1 (under body), (1-0.9) / 2 = 0.05
+
+    const headMesh = new Cube(
+      vec3(
+        -head.width / 2,
+        head.height / 2,
+        -head.depth / 2
+      ),
       vec3(0, 0, 0),
-      vec3(1.25, 2, 0.9),
-      [
-        vec4(0, 1, 0, 1), // Green
-        vec4(0, 1, 0, 1), // Green
-        vec4(0, 1, 0, 1), // Green
-        vec4(0, 1, 0, 1), // Green
-        vec4(0, 1, 0, 1), // Green
-        vec4(0, 1, 0, 1), // Green
-      ]
+      vec3(head.width, head.height, head.depth),
+      faces(1, 0, 0)
     );
-    this.addChild(body);
+    // Camera sits at the head pivot.
+    camera.position = vec3(0, 0, 0);
+
+    this.headPivot.addChild(headMesh);
+    this.headPivot.addChild(camera);
+    this.addChild(this.headPivot);
+
+    // Body
+    const bodyMesh = new Cube(
+      vec3(
+        bodyCenter.x - body.width / 2,
+        leg.height,
+        bodyCenter.z - body.depth / 2
+      ),
+      vec3(0, 0, 0),
+      vec3(body.width, body.height, body.depth),
+      faces(0, 1, 0)
+    );
+
+    this.addChild(bodyMesh);
+
     // Arms
     for (let i = 0; i < 2; i++) {
-      // The right is 1.125, 1.25(body) - (0.5arm)/2 = 1.125
-      // The left arm is -0.5 - 0.125 (body offset) = -0.625
-      const arm = new Cube(
-        vec3(i === 0 ? -0.625 : 1.125, -1.25, 0.25),
+      const side = i === 0 ? -1 : 1;
+
+      const armMesh = new Cube(
+        vec3(
+          side * armOffset - arm.width / 2,
+          leg.height,
+          -arm.depth / 2
+        ),
         vec3(0, 0, 0),
-        vec3(0.5, 1.5, 0.5),
-        [
-          vec4(0, 0, 1, 1), // Blue
-          vec4(0, 0, 1, 1), // Blue
-          vec4(0, 0, 1, 1), // Blue
-          vec4(0, 0, 1, 1), // Blue
-          vec4(0, 0, 1, 1), // Blue
-          vec4(0, 0, 1, 1), // Blue
-        ]
+        vec3(arm.width, arm.height, arm.depth),
+        faces(0, 0, 1)
       );
-      this.addChild(arm);
+
+      this.addChild(armMesh);
     }
+
     // Legs
     for (let i = 0; i < 2; i++) {
-      const leg = new Cube(
-        vec3(i === 0 ? -0.125 : 1.25-0.125-0.5, -3, 0.25), // Left or right side
+      const side = i === 0 ? -1 : 1;
+
+      const legMesh = new Cube(
+        vec3(
+          side * legOffset - leg.width / 2,
+          0,
+          -leg.depth / 2
+        ),
         vec3(0, 0, 0),
-        vec3(0.5, 1.5, 0.5),
-        [
-          vec4(1, 1, 0, 1), // Yellow
-          vec4(1, 1, 0, 1), // Yellow
-          vec4(1, 1, 0, 1), // Yellow
-          vec4(1, 1, 0, 1), // Yellow
-          vec4(1, 1, 0, 1), // Yellow
-          vec4(1, 1, 0, 1), // Yellow
-        ]
+        vec3(leg.width, leg.height, leg.depth),
+        faces(1, 1, 0)
       );
-      this.addChild(leg);
+
+      this.addChild(legMesh);
     }
+  }
+
+  public override shouldRender(renderer: Renderer): boolean {
+    // Don't render the player if the renderer's camera is the player's camera.
+    if (renderer.getCamera() === this.camera) return false;
+    return true;
   }
 }
 

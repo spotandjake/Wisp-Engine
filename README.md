@@ -1,19 +1,34 @@
-# Assignment-02
+# Wisp Engine
 
-This is my assignment 2, instead of completeing the basic project with webgl, I decided to invest my time in building a good rendering abstraction based around webGPU which fulfils the goals of the assignment and can be used for my project.
+Wisp Engine is a lightweight rendering engine built on top of WebGPU, designed to provide a foundation for building 3D games and interactive scenes.
+
+The engine combines **entity-component-system (ECS)** architecture with traditional inheritance to give developers flexibility when structuring game objects, building scenes, and implementing complex behaviors.
+
+Wisp is still in it's early stages, and may not cover every use case. This project has also been a learning experience, so not every abstraction is necessarily perfect. However, after building and experimenting with several scenes, I've found the architecture to be a practical starting point for developing WebGPU applications and games.
+
+## Highlights
+
+- [**GLTF model loading**](https://en.wikipedia.org/wiki/GlTF) – Load and render scenes built with gltf models.
+- **Custom shaders** – A set of shader conventions that allows developers to provide their own WGSL shaders.
+- [**ECS behavioural system**](https://en.wikipedia.org/wiki/Entity_component_system) – Build dynamic and complex game behaviors through composable entities and components.
+- [**Blinn–Phong lighting**](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model) – Built-in lighting model for basic 3D scene illumination.
+- **Flexible scene architecture** – Combine ECS and inheritance to organize game objects and their behaviors.
+
 
 ## Building
 
-The commands below can be used to build my project.
+A simple example scene is provided in `main.ts` to get you started. Feel free to modify it or replace it with your own scene.
+
+To get started, install the dependencies and launch the development server:
 
 ```bash
-npm ci # Installs the dependencies
+npm ci # Installs the dependencies (npm install would override package-lock)
 npm run dev # Hosts the vite server
 ```
 
 ## Commands
 
-TODO
+* 
 
 ## Dependencies
 
@@ -24,37 +39,3 @@ This project is built using minimal dependencies however a list of them and what
 * `wesl-plugin` - A vite plugin for [Wesl](https://wesl-lang.dev/docs/Getting-Started) which is a superset of WGSL implementing a module system.
 * `mv-redux` - Basic vector and matrix operations.
 * [`webgpu-utils`](https://www.npmjs.com/package/webgpu-utils) - A basic abstraction library similar to mv redux to simplify common webgpu abstractions.
-
-## Architecture
-
-I figured given the complexity of my renderer I should give a basic overview of how things work and the abstractions I have implemented.
-
-*` ./engine` - The heart of our implementation
-  * `./renderer.ts` - The main orchestrator responsible for setting up webGPU and managing rendering passes.
-  * `./geometry.ts` - The standardized geometry layout for any object in the scene.
-  * `./controller.ts` - A small class for managing user inputs in a standardized cross platform manner.
-  * `./shaders/` - A home for all of our engines build in behaviors
-    * `./engine.wesl` - This is the base `wgsl` shader that all shaders are expected to inherit from, it allows us to separate the engine's shader expectations from a users shader.
-    * `./engine.ts` - This implements the shaders ABI abstracting communication.
-    * `./default.wesl` - The default shader used by our renderableObjects, that handles rendering generic geometries.
-    * `./default.ts` - This implements the shaders ABI abstracting communication.
-  * `./prototypes` - The base classes that we expect users to build off of.
-    * `./gameObject.ts` - This is the root item in our scene, it handles the transform information and children elements of a particular node, everything that gets rendered is a `gameObject`
-    * ./renderableGameObject.ts` - This is an extension of our gameObject for anything renderable, it handles the default rendering implementation (though users can override it if they need something more unique).
-    * `./behavior.ts` - This is the base of our extensible [ecs](https://en.wikipedia.org/wiki/Entity_component_system) based behavior system, users can implement custom behaviors that make scene items do something without having to manage all updates from the root of the application.
-  * `./primitives/` - This folder contains our base scene items.
-    * `./camera.ts` - A basic camera implementation responsible for handling view and projection matrices.
-    * `./light.ts` - A basic light object that allows users to light their scene.
-    * `./plane.ts` - A basic plane, as a building block for more complex shapes. (We should probably add some more primitives)
-    * `./world.ts` - A basic world class, which is really just a game object that holds everything.
-  * `./internal/` - This folder contains any internal utilities that don't really fit elsewhere
-    * `./errors.ts` - A central place for proper custom error type and error handling.
-  * `./behaviors/` - This folder contains our primitive behaviors
-    * `./controllable.ts` - Connects the `Controllable` class to a GameObject allowing for standard fps movement.
-* `./behaviors` - User implemented Behaviors
-  * `./slider.ts` - Allows us to control any 3dObject using a set of range inputs
-* `./geometry` - A collection of user defined geometry
-  * `./house.ts` - A basic house model.
-* `./objects` - A collection of user defined GameObjects
-  * `./house.ts` - The actual game object implementing the house geometry
-* `main.ts` - The entrypoint for our project, and where we assemble our scene

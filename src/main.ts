@@ -1,12 +1,14 @@
-import { vec3, vec4 } from "mv-redux";
+import { vec3, vec4, radians } from "mv-redux";
 import { WebGpuUnavailableError } from './engine/internal/errors';
+import { cameraToggle, cameraPositions, cameraRotations } from './menu';
 // Engine
 import Renderer, { RendererUpdateEvent } from './engine/renderer';
 import Controller from './engine/controller';
 import GameObject from './engine/prototypes/gameObject';
 import Material from './engine/prototypes/material';
+import getGLTFLoader from './engine/primitives/gltf';
 // Behaviors
-import ControllableBehavior from './engine/behaviors/controllable';
+import PlayerController from './behaviors/playerController';
 import SliderBehavior from './behaviors/slider';
 // Models
 import World from './engine/primitives/world';
@@ -14,21 +16,9 @@ import Camera from './engine/primitives/camera';
 import Plane from './engine/primitives/plane';
 import Light, { LightType } from './engine/primitives/light';
 import Player from './objects/player';
-import House from './objects/house';
-
-// import Cube from './engine/primitives/cube';
 
 // Get our dom items
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
-
-// TODO: Extract this to a menu handler
-const cameraToggle = document.getElementById('ct') as HTMLInputElement;
-const cameraX = document.getElementById('cx') as HTMLInputElement;
-const cameraY = document.getElementById('cy') as HTMLInputElement;
-const cameraZ = document.getElementById('cz') as HTMLInputElement;
-const cameraRotX = document.getElementById('cRotx') as HTMLInputElement;
-const cameraRotY = document.getElementById('cRoty') as HTMLInputElement;
-const cameraRotZ = document.getElementById('cRotz') as HTMLInputElement;
 
 // Setup our renderer
 let renderer: Renderer;
@@ -45,24 +35,19 @@ try {
   throw error;
 }
 
+// Initiate our GLTF loader
+const loadGLTF = getGLTFLoader(renderer);
+const House = await loadGLTF('./src/models/house/scene.gltf');
+
 // Load our textures
-const groundTexture = await renderer.loadTexture('./src/textures/grass.png');
+// const groundTexture = await renderer.loadTexture('./src/textures/grass.png');
 // Create some behaviors
 const controller = new Controller(window);
-const controllableBehavior = new ControllableBehavior(controller, 10, 2);
 // const rotationControllableBehavior = new ControllableBehavior(controller, undefined, 2);
 const cameraSliderBehavior = (gameObject: GameObject) => new SliderBehavior(
   gameObject,
-  {
-    x: cameraX,
-    y: cameraY,
-    z: cameraZ,
-  },
-  {
-    x: cameraRotX,
-    y: cameraRotY,
-    z: cameraRotZ,
-  },
+  cameraPositions,
+  cameraRotations,
   undefined
 );
 
@@ -74,7 +59,7 @@ const ground = new Plane(
   vec3(0, 0, 0),
   vec3(1000, 1, 1000),
   // Grass Green ground
-  new Material(vec4(1.0, 1.0, 1.0, 1.0), groundTexture, 32)
+  new Material(vec4(0.0, 1.0, 0.0, 1.0), null, 32)
 );
 world.addChild(ground);
 const house = new House(
@@ -93,10 +78,10 @@ const sun = new Light(
 );
 world.addChild(sun);
 
+// NOTE: The numbers here were picked by hand to give a nice view of the scene.
 const skyCamera = new Camera(
-  vec3(30, 20, 30),
-  // TODO: Improve these numbers
-  vec3(-0.5, 0.7, 0), // These were picked by hand to give a nice view of the scene
+  vec3(55, 45, 55),
+  vec3(radians(-30), radians(45), 0),
   canvas.width / canvas.height
 );
 skyCamera.addBehavior(cameraSliderBehavior(skyCamera));
@@ -122,10 +107,9 @@ const player = new Player(
   vec3(1, 1, 1),
   playerCamera
 );
-player.head.addChild(playerCamera);
 player.addChild(flashLight);
-// TODO: We need to make a behavior specifically for the player as the player is a special case where rotation should be applied to the player and camera, but movement should only be applied to the player.
-player.addBehavior(controllableBehavior);
+const playerController = new PlayerController(controller, player, 10, 2);
+player.addBehavior(playerController);
 world.addChild(player);
 
 // Set our basic renderer properties

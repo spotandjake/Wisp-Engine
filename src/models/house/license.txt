@@ -1,0 +1,11 @@
+Model Information:
+* title:	House with Interior... and Porch
+* source:	https://sketchfab.com/3d-models/house-with-interior-and-porch-51aa0e8c9b224262af9df8942761e5c7
+* author:	Lodgelus (https://sketchfab.com/lodgelus)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "House with Interior... and Porch" (https://sketchfab.com/3d-models/house-with-interior-and-porch-51aa0e8c9b224262af9df8942761e5c7) by Lodgelus (https://sketchfab.com/lodgelus) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

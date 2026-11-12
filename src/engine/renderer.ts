@@ -58,6 +58,8 @@ class Renderer extends EventTarget {
   private skyColor: Vec3;
   /** A global store for all textures. */
   private textureStore: Map<TextureReference, GPUTexture> = new Map();
+  /** The resize observer for the canvas. */
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor(canvas: HTMLCanvasElement, skyColor: Vec3 = vec3(0.5, 0.7, 1.0)) {
     super();
@@ -73,6 +75,10 @@ class Renderer extends EventTarget {
     this.skyColor = skyColor;
     // Initialize the texture store for later use.
     this.textureStore = new Map();
+
+    this.resizeObserver = new ResizeObserver(this.resize.bind(this));
+    this.resizeObserver.observe(this.canvas);
+    this.resize();
   }
 
   /**
@@ -85,11 +91,9 @@ class Renderer extends EventTarget {
 
     // Get the WebGPU device adapter
     const adapter: GPUAdapter | null = await navigator.gpu.requestAdapter();
-    // TODO: Should this have a more specific error type?
     if (adapter === null)
       throw new WebGpuUnavailableError("No WebGPU adapter available.");
     const device: GPUDevice = await adapter.requestDevice();
-    // TODO: What are these errors?????
     device.addEventListener("uncapturederror", (event) =>
       console.error("Uncaptured WebGPU error:", event.error),
     );
@@ -99,13 +103,11 @@ class Renderer extends EventTarget {
       "webgpu",
     ) as GPUCanvasContext;
     const format: GPUTextureFormat = navigator.gpu.getPreferredCanvasFormat();
-    // TODO: What happens if the canvas is resized?
     context.configure({ device, format, alphaMode: "opaque" });
 
     // Construct our depth texture
     const depthTexture = device.createTexture({
       size: {
-        // TODO: Should we allow the user to change the size of the depth texture?
         width: this.canvas.width,
         height: this.canvas.height,
       },
@@ -126,6 +128,37 @@ class Renderer extends EventTarget {
 
     // Begin our render loop
     this.update(0);
+  }
+
+  /** Handles canvas resizing. */
+  private resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.max(1, Math.round(this.canvas.clientWidth * dpr));
+    const height = Math.max(1, Math.round(this.canvas.clientHeight * dpr));
+
+    if (this.canvas.width === width && this.canvas.height === height) {
+      return;
+    }
+
+    this.canvas.width = width;
+    this.canvas.height = height;
+
+    if (this.context.initialized) {
+      const rendererContext = this.context.context;
+      const oldDepthTexture = rendererContext.depthTexture;
+
+      rendererContext.depthTexture = rendererContext.device.createTexture({
+        size: { width, height },
+        format: "depth24plus",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+
+      oldDepthTexture.destroy();
+    }
+
+    if (this.camera !== undefined && this.camera.autoResize) {
+      this.camera.setAspectRatio(width / height);
+    }
   }
 
   /** The main update loop for the renderer. */
@@ -151,7 +184,6 @@ class Renderer extends EventTarget {
 
     const context = this.context.context;
 
-    // TODO: Document these better
     // Create the command encoder.
     const encoder = context.device.createCommandEncoder();
     // Begin the render pass.
@@ -171,7 +203,6 @@ class Renderer extends EventTarget {
         },
       ],
       depthStencilAttachment: {
-        // TODO: We may need to refactor this for canvas resizing.
         view: context.depthTexture.createView(),
         depthClearValue: 1,
         depthLoadOp: "clear",
@@ -183,13 +214,13 @@ class Renderer extends EventTarget {
     // NOTE: We are using an iterative queue approach here so we can find the camera world position.
     const lightBuffer: [Light, Vec3, Vec3][] = [];
     const renderQueue: { obj: RenderableGameObject; worldMatrix: Mat4 }[] = [];
-    const workQueue = [{ obj: scene, worldMatrix: mat4() }];
+    const workQueue = [{ obj: scene, worldMatrix: mat4(), shouldRender: true }];
     // We default to using the camera's position and rotation in local space,
     // but we will update these values if we find the camera in the scene graph.
     let cameraPosition: Vec3 = this.camera.position;
     let cameraWorldMatrix: Mat4 = this.camera.getModelMatrix();
     while (workQueue.length > 0) {
-      const { obj, worldMatrix } = workQueue.pop()!;
+      const { obj, worldMatrix, shouldRender: parentShouldRender } = workQueue.pop()!;
       const modelMatrix = obj.getModelMatrix();
       const childWorldMatrix = mult(worldMatrix, modelMatrix);
       // If this object is a camera, store the camera position for later use (While we have a reference this is the only way to get the camera position in world space)
@@ -204,7 +235,6 @@ class Renderer extends EventTarget {
       }
       // If the object is a light, store the light data for later use
       if (obj instanceof Light) {
-        // TODO: Validate this coordinate math
         const rotationY = Math.asin(
           Math.max(-1, Math.min(1, childWorldMatrix[2][0])),
         );
@@ -227,13 +257,14 @@ class Renderer extends EventTarget {
           vec3(rotationX, rotationY, rotationZ),
         ]);
       }
+      const shouldRender = parentShouldRender && obj.shouldRender(this);
       // If the object is render add it to the render queue
-      if (obj instanceof RenderableGameObject) {
+      if (obj instanceof RenderableGameObject && shouldRender) {
         renderQueue.push({ obj, worldMatrix });
       }
       // Add the object's children to the work queue
       for (const child of obj.children) {
-        workQueue.push({ obj: child, worldMatrix: childWorldMatrix });
+        workQueue.push({ obj: child, worldMatrix: childWorldMatrix, shouldRender });
       }
     }
     // Get the camera's view and projection matrices in world space
@@ -260,9 +291,16 @@ class Renderer extends EventTarget {
   }
 
   // Public api
+  /** Gets the camera the renderer is rendering from. */
+  public getCamera(): Camera | undefined {
+    return this.camera;
+  }
   /** Sets the camera the renderer will render from. */
   public setCamera(camera: Camera): void {
     this.camera = camera;
+    if (this.camera !== undefined && this.camera.autoResize) {
+      this.camera.setAspectRatio(this.canvas.width / this.canvas.height);
+    }
   }
   /** Sets the scene to render. */
   public setScene(scene: GameObject): void {
@@ -280,6 +318,30 @@ class Renderer extends EventTarget {
     const textureRef: TextureReference = Symbol("texture");
     this.textureStore.set(textureRef, texture);
     
+    return textureRef;
+  }
+
+  public async loadImageBitmap(bitmap: ImageBitmap): Promise<TextureReference> {
+    if (!this.context.initialized)
+      throw new Error("Renderer is not initialized.");
+    const context = this.context.context;
+
+    // Create a GPU texture from the pixels
+    const texture = context.device.createTexture({
+      size: [bitmap.width, bitmap.height, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    // Copy the pixels to the GPU texture
+    context.device.queue.copyExternalImageToTexture(
+      { source: bitmap },
+      { texture },
+      [bitmap.width, bitmap.height],
+    );
+    // Create a unique reference for the texture and store it in the cache
+    const textureRef: TextureReference = Symbol("texture");
+    this.textureStore.set(textureRef, texture);
+
     return textureRef;
   }
 }

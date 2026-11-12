@@ -23,7 +23,9 @@
     "wesl-plugin": "^0.6.81"
   },
   "dependencies": {
+    "@gltf-transform/core": "^4.5.1",
     "mv-redux": "^0.1.9",
+    "prettier": "^3.10.1",
     "webgpu-utils": "^2.1.1"
   },
   "allowScripts": {

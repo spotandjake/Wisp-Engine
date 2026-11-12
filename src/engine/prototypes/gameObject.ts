@@ -6,6 +6,7 @@ import {
   scaleMatrix,
   mult,
 } from "mv-redux";
+import type Renderer from "../renderer";
 import type Behavior from "./behavior";
 
 /** A game object in the scene. */
@@ -26,6 +27,11 @@ class GameObject {
     this.position = position;
     this.rotation = rotation;
     this.scale = scale;
+  }
+
+  /** Returns the position of the game object. */
+  public shouldRender(renderer: Renderer): boolean {
+    return true;
   }
 
   /** Adds a child to the game object. */

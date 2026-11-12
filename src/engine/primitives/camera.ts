@@ -11,12 +11,15 @@ class Camera extends GameObject {
   public readonly near: number;
   /** The far clipping plane of the camera. */
   public readonly far: number;
+  /** Weather we should resize the aspect ratio automatically. */
+  public readonly autoResize: boolean;
 
   constructor(
     position: Vec3,
     rotation: Vec3,
     aspectRatio: number,
     // These values are set to reasonable defaults, but can be changed if needed.
+    autoResize: boolean = true,
     fov: number = Math.PI / 4,
     near: number = 0.1,
     far: number = 1000.0,
@@ -26,6 +29,7 @@ class Camera extends GameObject {
 
     this.fov = fov;
     this.aspectRatio = aspectRatio;
+    this.autoResize = autoResize;
     this.near = near;
     this.far = far;
   }

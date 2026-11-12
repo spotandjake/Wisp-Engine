@@ -55,7 +55,6 @@ export interface EngineShaderAbiInput {
   /** The material to use for the engine shader. */
   material: Material;
   /** The renderer data to use for the engine shader. */
-  // TODO: It would be nice if we just passed the renderer in????
   renderer: RendererData;
   /** The world matrix to use for the engine shader. */
   worldMat: Mat4;

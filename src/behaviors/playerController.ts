@@ -38,18 +38,17 @@ export default class ControllableBehavior extends Behavior {
 
     
     // Apply the controller's input to the game object's rotation
-    // TODO: We want to follow the players head rotation from the center of the player, not the players body rotation.
     if (this.rotationSpeed !== undefined) {
-      gameObject.rotation.x += pitchAxis * this.rotationSpeed * deltaTime;
+      this.player.headPivot.rotation.x += pitchAxis * this.rotationSpeed * deltaTime;
+      if (this.player.headPivot.rotation.x > Math.PI / 2) this.player.headPivot.rotation.x = Math.PI / 2;
+      if (this.player.headPivot.rotation.x < -Math.PI / 2) this.player.headPivot.rotation.x = -Math.PI / 2;
       gameObject.rotation.y += -yawAxis * this.rotationSpeed * deltaTime;
     }
 
     if (this.moveSpeed !== undefined) {
       // Clamp the pitch rotation to prevent flipping
       const moveSpeed = this.moveSpeed * (1 + shiftAxis);
-
-      // TODO: We want to compute the forward and right vectors based on the player's head rotation not the player's body rotation.
-       // Calculate the forward and right vectors based on the game object's rotation
+      // Calculate the forward and right vectors based on the game object's rotation
       const forward = vec3(
         -Math.sin(gameObject.rotation.y),
         0,

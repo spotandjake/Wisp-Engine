@@ -23,7 +23,7 @@ export default class Plane extends RenderableGameObject {
     return {
       positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1]),
       normals: new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]),
-      uvs: new Float32Array([0, 0, 100, 0, 100, 100, 0, 100]),
+      uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
       indices: new Uint16Array([0, 2, 1, 0, 3, 2]),
       // Color it white by default
       colors: new Float32Array([

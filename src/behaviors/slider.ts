@@ -2,9 +2,6 @@ import { radians, degrees } from 'mv-redux';
 import Behavior from '../engine/prototypes/behavior';
 import type GameObject from '../engine/prototypes/gameObject';
 
-// TODO: Implement a disposer for this behavior to remove the event listeners when the behavior is removed from the game object.
-// TODO: Maybe we implement this on the abstract itself
-
 /** The set of input elements for a 3D vector. */
 export type Vector3InputElements = {
   x?: HTMLInputElement;
