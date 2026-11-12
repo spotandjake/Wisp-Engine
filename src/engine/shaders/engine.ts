@@ -65,7 +65,8 @@ export default (
   { textures, lights, material, renderer, worldMat }: EngineShaderAbiInput,
 ) => {
   // Get the material texture if it has one
-  const materialTexture = material.Texture !== null ? textures.get(material.Texture) : null;
+  const materialTexture =
+    material.Texture !== null ? textures.get(material.Texture) : null;
   if (materialTexture === undefined && material.Texture !== null) {
     throw new Error("Material texture not found in textures map.");
   }
@@ -105,17 +106,20 @@ export default (
   });
 
   // Create our texture and sampler for the material
-  const texture = materialTexture !== null && materialTexture !== undefined ? materialTexture : device.createTexture({
-    size: {
-      width: 1,
-      height: 1,
-    },
-    format: "rgba8unorm",
-    usage:
-      GPUTextureUsage.TEXTURE_BINDING |
-      GPUTextureUsage.COPY_DST |
-      GPUTextureUsage.RENDER_ATTACHMENT,
-  });
+  const texture =
+    materialTexture !== null && materialTexture !== undefined
+      ? materialTexture
+      : device.createTexture({
+          size: {
+            width: 1,
+            height: 1,
+          },
+          format: "rgba8unorm",
+          usage:
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+        });
   const sampler = device.createSampler({
     magFilter: "linear",
     minFilter: "linear",

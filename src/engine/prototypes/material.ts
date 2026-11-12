@@ -10,7 +10,11 @@ export default class Material {
   /** The shininess of the material. */
   public Shininess: number;
 
-  constructor(base_color: Vec4, texture: TextureReference | null, shininess: number) {
+  constructor(
+    base_color: Vec4,
+    texture: TextureReference | null,
+    shininess: number,
+  ) {
     this.BaseColor = base_color;
     this.Texture = texture;
     this.Shininess = shininess;

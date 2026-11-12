@@ -1,7 +1,11 @@
 // This module implements a GLTF based renderable object
 import type { Vec3 } from "mv-redux";
 import type { Geometry } from "../geometry";
-import { WebIO, type Material as GltfMaterial, type Primitive } from "@gltf-transform/core";
+import {
+  WebIO,
+  type Material as GltfMaterial,
+  type Primitive,
+} from "@gltf-transform/core";
 import { vec4, vec3 } from "mv-redux";
 import Renderer from "../renderer";
 import Material from "../prototypes/material";
@@ -21,7 +25,7 @@ const convertGltfMaterialToEngineMaterial = async (
   if (baseTexture == null) return new Material(vec4(...color), null, 32);
   const pixelData = baseTexture.getImage();
   if (pixelData === null) return new Material(vec4(...color), null, 32);
-  const blob = new Blob([pixelData], { type: baseTexture.getMimeType(), });
+  const blob = new Blob([pixelData], { type: baseTexture.getMimeType() });
   const bitmap = await createImageBitmap(blob);
   const textureReference = await renderer.loadImageBitmap(bitmap);
   return new Material(vec4(...color), textureReference, 32);
@@ -127,22 +131,22 @@ export default (renderer: Renderer) => {
         // Create a new class that extends RenderableGameObject and overrides the getGeometry method
         const part = class GLTFPart extends RenderableGameObject {
           public name: string = mesh.getName() || "GLTFPart";
-          constructor(position: Vec3, rotation: Vec3, scale: Vec3, material: Material) {
+          constructor(
+            position: Vec3,
+            rotation: Vec3,
+            scale: Vec3,
+            material: Material,
+          ) {
             super(position, rotation, scale, material);
           }
           protected override getGeometry(): Geometry {
             return geometry;
           }
-        }
+        };
 
         // Add the part to the list of parts
         parts.push(
-          new part(
-            vec3(0, 0, 0),
-            vec3(0, 0, 0),
-            vec3(1, 1, 1),
-            material
-          )
+          new part(vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1), material),
         );
       }
     }
@@ -154,6 +158,6 @@ export default (renderer: Renderer) => {
         // Add the children parts to the Gltf model
         for (const part of parts) this.addChild(part);
       }
-    }
+    };
   };
 };

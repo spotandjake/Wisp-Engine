@@ -8,7 +8,11 @@ import Material from "./material";
 
 import { vec3 } from "mv-redux";
 import { EmptyGeometryError } from "../internal/errors";
-import { makeShaderDataDefinitions, createBuffersAndAttributesFromArrays, makeBindGroupLayoutDescriptors } from "webgpu-utils";
+import {
+  makeShaderDataDefinitions,
+  createBuffersAndAttributesFromArrays,
+  makeBindGroupLayoutDescriptors,
+} from "webgpu-utils";
 import GameObject from "./gameObject";
 
 import engineShaderAbi from "../shaders/engine";
@@ -16,11 +20,20 @@ import defaultShaderAbi from "../shaders/default";
 
 import Shader from "../shaders/default.wesl?static";
 
-// Memoized lazy shader and definition initialization, so we can share across objects 
-let shaderCache: { device: GPUDevice, shaderModule: GPUShaderModule, defs: ShaderDataDefinitions} | undefined = undefined;
-const getShaderModuleAndDefs = (device: GPUDevice): { shaderModule: GPUShaderModule, defs: ShaderDataDefinitions} => {
-  if (shaderCache !== undefined && device === shaderCache.device) return shaderCache;
-  const shaderModule = device.createShaderModule({ code: Shader, });
+// Memoized lazy shader and definition initialization, so we can share across objects
+let shaderCache:
+  | {
+      device: GPUDevice;
+      shaderModule: GPUShaderModule;
+      defs: ShaderDataDefinitions;
+    }
+  | undefined = undefined;
+const getShaderModuleAndDefs = (
+  device: GPUDevice,
+): { shaderModule: GPUShaderModule; defs: ShaderDataDefinitions } => {
+  if (shaderCache !== undefined && device === shaderCache.device)
+    return shaderCache;
+  const shaderModule = device.createShaderModule({ code: Shader });
   const defs = makeShaderDataDefinitions(Shader);
   shaderCache = { device, shaderModule, defs };
   return shaderCache;
@@ -67,7 +80,7 @@ class RenderableGameObject extends GameObject {
     worldMatrix: Mat4,
     lights: [Light, Vec3, Vec3][],
     viewProjectionMatrix: Mat4,
-    cameraPosition: Vec3
+    cameraPosition: Vec3,
   ): void {
     // Get the geometry
     const geometry = this.getGeometry();
@@ -80,11 +93,21 @@ class RenderableGameObject extends GameObject {
     let attributeBuffers: Arrays = {
       positions: geometry.positions,
       normals: geometry.normals,
-      colors: geometry.colors !== undefined ? geometry.colors : new Float32Array(vertexCount * 4).fill(1),
-      uvs: geometry.uvs !== undefined ? geometry.uvs : new Float32Array(vertexCount * 2),
+      colors:
+        geometry.colors !== undefined
+          ? geometry.colors
+          : new Float32Array(vertexCount * 4).fill(1),
+      uvs:
+        geometry.uvs !== undefined
+          ? geometry.uvs
+          : new Float32Array(vertexCount * 2),
     };
-    if (geometry.indices !== undefined) attributeBuffers = { ...attributeBuffers, indices: geometry.indices};
-    const attributes = createBuffersAndAttributesFromArrays(context.device, attributeBuffers);
+    if (geometry.indices !== undefined)
+      attributeBuffers = { ...attributeBuffers, indices: geometry.indices };
+    const attributes = createBuffersAndAttributesFromArrays(
+      context.device,
+      attributeBuffers,
+    );
 
     // Construct our pipeline
     const pipelineDesc = {
@@ -100,12 +123,16 @@ class RenderableGameObject extends GameObject {
         // The entry point for the fragment shader in the shader code.
         entryPoint: "fragment_main",
         targets: [{ format: context.format }],
-      }
+      },
     };
     // Create the bind group layouts and pipeline layout
     const descriptors = makeBindGroupLayoutDescriptors(defs, pipelineDesc);
-    const groupLayouts = descriptors.map((desc) => context.device.createBindGroupLayout(desc));
-    const pipelineLayout = context.device.createPipelineLayout({ bindGroupLayouts: groupLayouts, });
+    const groupLayouts = descriptors.map((desc) =>
+      context.device.createBindGroupLayout(desc),
+    );
+    const pipelineLayout = context.device.createPipelineLayout({
+      bindGroupLayouts: groupLayouts,
+    });
     // Create the render pipeline
     const pipeline = context.device.createRenderPipeline({
       layout: pipelineLayout,
@@ -126,28 +153,27 @@ class RenderableGameObject extends GameObject {
     pass.setPipeline(pipeline);
 
     // Pass the data to the GPU using our shader ABIs.
-    const baseShaderAbiInput = { device: context.device, defs, layouts: groupLayouts, pass };
-    engineShaderAbi(
-      baseShaderAbiInput,
-      {
-        textures,
-        lights,
-        material: this.material,
-        renderer: {
-          ambient_light: vec3(0.2, 0.2, 0.2),
-          camera_position: cameraPosition,
-          view_projection: viewProjectionMatrix
-        },
-        worldMat: worldMatrix
-      }
-    );
+    const baseShaderAbiInput = {
+      device: context.device,
+      defs,
+      layouts: groupLayouts,
+      pass,
+    };
+    engineShaderAbi(baseShaderAbiInput, {
+      textures,
+      lights,
+      material: this.material,
+      renderer: {
+        ambient_light: vec3(0.2, 0.2, 0.2),
+        camera_position: cameraPosition,
+        view_projection: viewProjectionMatrix,
+      },
+      worldMat: worldMatrix,
+    });
 
-    defaultShaderAbi(
-      baseShaderAbiInput,
-      {
-        modelMatrix: this.getModelMatrix()
-      }
-    );
+    defaultShaderAbi(baseShaderAbiInput, {
+      modelMatrix: this.getModelMatrix(),
+    });
 
     // Bind the vertex shader attributes
     pass.setVertexBuffer(0, attributes.buffers[0]);

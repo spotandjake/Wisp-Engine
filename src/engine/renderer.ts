@@ -1,5 +1,5 @@
 import { type Vec3, type Mat4, vec3, mult, mat4, inverse } from "mv-redux";
-import { createTextureFromImage } from 'webgpu-utils';
+import { createTextureFromImage } from "webgpu-utils";
 import { WebGpuUnavailableError } from "./internal/errors";
 import type GameObject from "./prototypes/gameObject";
 import RenderableGameObject from "./prototypes/renderableGameObject";
@@ -220,7 +220,11 @@ class Renderer extends EventTarget {
     let cameraPosition: Vec3 = this.camera.position;
     let cameraWorldMatrix: Mat4 = this.camera.getModelMatrix();
     while (workQueue.length > 0) {
-      const { obj, worldMatrix, shouldRender: parentShouldRender } = workQueue.pop()!;
+      const {
+        obj,
+        worldMatrix,
+        shouldRender: parentShouldRender,
+      } = workQueue.pop()!;
       const modelMatrix = obj.getModelMatrix();
       const childWorldMatrix = mult(worldMatrix, modelMatrix);
       // If this object is a camera, store the camera position for later use (While we have a reference this is the only way to get the camera position in world space)
@@ -264,7 +268,11 @@ class Renderer extends EventTarget {
       }
       // Add the object's children to the work queue
       for (const child of obj.children) {
-        workQueue.push({ obj: child, worldMatrix: childWorldMatrix, shouldRender });
+        workQueue.push({
+          obj: child,
+          worldMatrix: childWorldMatrix,
+          shouldRender,
+        });
       }
     }
     // Get the camera's view and projection matrices in world space
@@ -311,13 +319,15 @@ class Renderer extends EventTarget {
     if (!this.context.initialized)
       throw new Error("Renderer is not initialized.");
     const context = this.context.context;
-    
+
     // Load the texture from the image file and create a GPU texture
-    const texture = await createTextureFromImage(context.device, path, { mips: true });
+    const texture = await createTextureFromImage(context.device, path, {
+      mips: true,
+    });
     // Create a unique reference for the texture and store it in the cache
     const textureRef: TextureReference = Symbol("texture");
     this.textureStore.set(textureRef, texture);
-    
+
     return textureRef;
   }
 
@@ -330,7 +340,10 @@ class Renderer extends EventTarget {
     const texture = context.device.createTexture({
       size: [bitmap.width, bitmap.height, 1],
       format: "rgba8unorm",
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      usage:
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.COPY_DST |
+        GPUTextureUsage.RENDER_ATTACHMENT,
     });
     // Copy the pixels to the GPU texture
     context.device.queue.copyExternalImageToTexture(

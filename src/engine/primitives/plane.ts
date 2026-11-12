@@ -5,7 +5,6 @@ import RenderableGameObject from "../prototypes/renderableGameObject";
 
 /** A basic plane in 3D space. */
 export default class Plane extends RenderableGameObject {
-
   /** Creates a new plane. */
   constructor(
     // Game Object
@@ -13,7 +12,7 @@ export default class Plane extends RenderableGameObject {
     rotation: Vec3,
     scale: Vec3,
     // Renderable Game Object Property
-    material: Material
+    material: Material,
   ) {
     super(position, rotation, scale, material);
   }
@@ -27,11 +26,8 @@ export default class Plane extends RenderableGameObject {
       indices: new Uint16Array([0, 2, 1, 0, 3, 2]),
       // Color it white by default
       colors: new Float32Array([
-        1, 1, 1, 1,
-        1, 1, 1, 1,
-        1, 1, 1, 1,
-        1, 1, 1, 1
-      ])
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      ]),
     };
   }
 }

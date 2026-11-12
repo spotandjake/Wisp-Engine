@@ -3,7 +3,8 @@
   --font-color: #eee;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   background-color: var(--background-color);
@@ -14,19 +15,21 @@ body {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-rows: minmax(0, 1fr);
-  gap: .5rem;
+  gap: 0.5rem;
   margin: 0;
-  padding: .5rem;
+  padding: 0.5rem;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 canvas {
   display: block;
   height: 100%;
   width: 100%;
   min-width: 0;
-  border-radius: .25rem;
+  border-radius: 0.25rem;
 }
 
 /* Mostly taken from labs */
@@ -39,14 +42,20 @@ canvas {
   border: 1px solid currentColor;
   width: max-content;
 
-  hr { width: 100%; }
-  p { margin: 0; white-space: nowrap; }
+  hr {
+    width: 100%;
+  }
+  p {
+    margin: 0;
+    white-space: nowrap;
+  }
   i {
     font-family: "Times New Roman", Times, serif;
     font-style: italic;
     font-size: 1.08em;
   }
-  label, input {
+  label,
+  input {
     vertical-align: middle;
     display: inline-block;
   }
@@ -61,7 +70,8 @@ canvas {
     min-width: 7ch;
     text-align: right;
   }
-  input[type="reset"], button[type="reset"] {
+  input[type="reset"],
+  button[type="reset"] {
     margin-top: 2rem;
     padding: 0.45em;
     width: 100%;

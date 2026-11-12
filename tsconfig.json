@@ -23,10 +23,7 @@
     "noUncheckedSideEffectImports": true,
 
     "allowJs": true,
-    "checkJs": true,
+    "checkJs": true
   },
-  "include": [
-    "./",
-    "./shims.d.ts",
-  ]
+  "include": ["./", "./shims.d.ts"]
 }

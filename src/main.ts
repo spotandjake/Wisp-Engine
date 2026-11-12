@@ -1,32 +1,29 @@
 import { vec3, vec4, radians } from "mv-redux";
-import { WebGpuUnavailableError } from './engine/internal/errors';
-import { cameraToggle, cameraPositions, cameraRotations } from './menu';
+import { WebGpuUnavailableError } from "./engine/internal/errors";
+import { cameraToggle, cameraPositions, cameraRotations } from "./menu";
 // Engine
-import Renderer, { RendererUpdateEvent } from './engine/renderer';
-import Controller from './engine/controller';
-import GameObject from './engine/prototypes/gameObject';
-import Material from './engine/prototypes/material';
-import getGLTFLoader from './engine/primitives/gltf';
+import Renderer, { RendererUpdateEvent } from "./engine/renderer";
+import Controller from "./engine/controller";
+import GameObject from "./engine/prototypes/gameObject";
+import Material from "./engine/prototypes/material";
+import getGLTFLoader from "./engine/primitives/gltf";
 // Behaviors
-import PlayerController from './behaviors/playerController';
-import SliderBehavior from './behaviors/slider';
+import PlayerController from "./behaviors/playerController";
+import SliderBehavior from "./behaviors/slider";
 // Models
-import World from './engine/primitives/world';
-import Camera from './engine/primitives/camera';
-import Plane from './engine/primitives/plane';
-import Light, { LightType } from './engine/primitives/light';
-import Player from './objects/player';
+import World from "./engine/primitives/world";
+import Camera from "./engine/primitives/camera";
+import Plane from "./engine/primitives/plane";
+import Light, { LightType } from "./engine/primitives/light";
+import Player from "./objects/player";
 
 // Get our dom items
-const canvas = document.getElementById('screen') as HTMLCanvasElement;
+const canvas = document.getElementById("screen") as HTMLCanvasElement;
 
 // Setup our renderer
 let renderer: Renderer;
 try {
-  renderer = new Renderer(
-    canvas,
-    vec3(0.5, 0.7, 1.0),
-  );
+  renderer = new Renderer(canvas, vec3(0.5, 0.7, 1.0));
   await renderer.initialize();
 } catch (error: unknown) {
   // TODO: Display a nice error message to the user if WebGPU is not available.
@@ -37,19 +34,15 @@ try {
 
 // Initiate our GLTF loader
 const loadGLTF = getGLTFLoader(renderer);
-const House = await loadGLTF('./src/models/house/scene.gltf');
+const House = await loadGLTF("./src/models/house/scene.gltf");
 
 // Load our textures
 // const groundTexture = await renderer.loadTexture('./src/textures/grass.png');
 // Create some behaviors
 const controller = new Controller(window);
 // const rotationControllableBehavior = new ControllableBehavior(controller, undefined, 2);
-const cameraSliderBehavior = (gameObject: GameObject) => new SliderBehavior(
-  gameObject,
-  cameraPositions,
-  cameraRotations,
-  undefined
-);
+const cameraSliderBehavior = (gameObject: GameObject) =>
+  new SliderBehavior(gameObject, cameraPositions, cameraRotations, undefined);
 
 // Setup our scene
 const world = new World();
@@ -59,14 +52,10 @@ const ground = new Plane(
   vec3(0, 0, 0),
   vec3(1000, 1, 1000),
   // Grass Green ground
-  new Material(vec4(0.0, 1.0, 0.0, 1.0), null, 32)
+  new Material(vec4(0.0, 1.0, 0.0, 1.0), null, 32),
 );
 world.addChild(ground);
-const house = new House(
-  vec3(0, 1, 0),
-  vec3(0, 0, 0),
-  vec3(0.03, 0.03, 0.03)
-);
+const house = new House(vec3(0, 1, 0), vec3(0, 0, 0), vec3(0.03, 0.03, 0.03));
 world.addChild(house);
 const sun = new Light(
   vec3(0, 10, 0),
@@ -74,7 +63,7 @@ const sun = new Light(
   LightType.Directional,
   1.0,
   vec3(1, 1, 1),
-  100.0
+  100.0,
 );
 world.addChild(sun);
 
@@ -82,11 +71,10 @@ world.addChild(sun);
 const skyCamera = new Camera(
   vec3(55, 45, 55),
   vec3(radians(-30), radians(45), 0),
-  canvas.width / canvas.height
+  canvas.width / canvas.height,
 );
 skyCamera.addBehavior(cameraSliderBehavior(skyCamera));
 world.addChild(skyCamera);
-
 
 const flashLight = new Light(
   vec3(0, 0, 0),
@@ -94,18 +82,18 @@ const flashLight = new Light(
   LightType.Point,
   1.0,
   vec3(1, 1, 1),
-  100.0
+  100.0,
 );
 const playerCamera = new Camera(
   vec3(0, 0, 0),
   vec3(0, 0, 0),
-  canvas.width / canvas.height
+  canvas.width / canvas.height,
 );
 const player = new Player(
   vec3(0, 10, 0),
   vec3(0, 0, 0),
   vec3(1, 1, 1),
-  playerCamera
+  playerCamera,
 );
 player.addChild(flashLight);
 const playerController = new PlayerController(controller, player, 10, 2);
@@ -120,12 +108,12 @@ const pickCamera = () => {
   } else {
     renderer.setCamera(playerCamera);
   }
-}
+};
 pickCamera();
-cameraToggle.addEventListener('change', pickCamera);
+cameraToggle.addEventListener("change", pickCamera);
 
 // Expose a basic rendering loop
-renderer.addEventListener('engineUpdate', (event: Event) => {
+renderer.addEventListener("engineUpdate", (event: Event) => {
   if (!(event instanceof RendererUpdateEvent)) return;
   const { deltaTime, timeStamp } = event;
   // Update the world

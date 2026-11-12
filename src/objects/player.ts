@@ -9,12 +9,7 @@ class Player extends GameObject {
   public readonly headPivot: GameObject;
   public readonly camera: Camera;
 
-  constructor(
-    position: Vec3,
-    rotation: Vec3,
-    scale: Vec3,
-    camera: Camera
-  ) {
+  constructor(position: Vec3, rotation: Vec3, scale: Vec3, camera: Camera) {
     super(position, rotation, scale);
     this.camera = camera;
 
@@ -66,24 +61,16 @@ class Player extends GameObject {
 
     // Head pivot: rotates around the center of the head.
     this.headPivot = new GameObject(
-      vec3(
-        0,
-        leg.height + head.height / 2,
-        0
-      ),
+      vec3(0, leg.height + head.height / 2, 0),
       vec3(0, 0, 0),
-      vec3(1, 1, 1)
+      vec3(1, 1, 1),
     );
 
     const headMesh = new Cube(
-      vec3(
-        -head.width / 2,
-        head.height / 2,
-        -head.depth / 2
-      ),
+      vec3(-head.width / 2, head.height / 2, -head.depth / 2),
       vec3(0, 0, 0),
       vec3(head.width, head.height, head.depth),
-      faces(1, 0, 0)
+      faces(1, 0, 0),
     );
     // Camera sits at the head pivot.
     camera.position = vec3(0, 0, 0);
@@ -97,11 +84,11 @@ class Player extends GameObject {
       vec3(
         bodyCenter.x - body.width / 2,
         leg.height,
-        bodyCenter.z - body.depth / 2
+        bodyCenter.z - body.depth / 2,
       ),
       vec3(0, 0, 0),
       vec3(body.width, body.height, body.depth),
-      faces(0, 1, 0)
+      faces(0, 1, 0),
     );
 
     this.addChild(bodyMesh);
@@ -111,14 +98,10 @@ class Player extends GameObject {
       const side = i === 0 ? -1 : 1;
 
       const armMesh = new Cube(
-        vec3(
-          side * armOffset - arm.width / 2,
-          leg.height,
-          -arm.depth / 2
-        ),
+        vec3(side * armOffset - arm.width / 2, leg.height, -arm.depth / 2),
         vec3(0, 0, 0),
         vec3(arm.width, arm.height, arm.depth),
-        faces(0, 0, 1)
+        faces(0, 0, 1),
       );
 
       this.addChild(armMesh);
@@ -129,14 +112,10 @@ class Player extends GameObject {
       const side = i === 0 ? -1 : 1;
 
       const legMesh = new Cube(
-        vec3(
-          side * legOffset - leg.width / 2,
-          0,
-          -leg.depth / 2
-        ),
+        vec3(side * legOffset - leg.width / 2, 0, -leg.depth / 2),
         vec3(0, 0, 0),
         vec3(leg.width, leg.height, leg.depth),
-        faces(1, 1, 0)
+        faces(1, 1, 0),
       );
 
       this.addChild(legMesh);
