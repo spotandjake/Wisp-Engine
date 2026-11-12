@@ -1,19 +1,23 @@
+// This file contains a basic class that allows WASD and ARROW control of a GameObject.
 import { vec3, add, mult } from "mv-redux";
 
-import Behavior from '../prototypes/behavior';
-import Controller from '../controller';
-import type GameObject from '../prototypes/gameObject';
+import type GameObject from "../prototypes/gameObject";
+import Behavior from "../prototypes/behavior";
+import Controller from "../controller";
 
 /** This Behavior takes a controller and applies its input to the entity it is attached to. */
 export default class ControllableBehavior extends Behavior {
+  /** The controller that will be used to control the game object. */
   private controller: Controller;
+  /** The speed at which the game object will move. */
   private moveSpeed: number | undefined;
+  /** The speed at which the game object will rotate. */
   private rotationSpeed: number | undefined;
 
   constructor(
     controller: Controller,
     moveSpeed: number | undefined,
-    rotationSpeed: number | undefined
+    rotationSpeed: number | undefined,
   ) {
     super();
     this.controller = controller;
@@ -31,7 +35,6 @@ export default class ControllableBehavior extends Behavior {
     const upAxis = this.controller.getUpAxis();
     const shiftAxis = this.controller.getShiftAxis();
 
-    
     // Apply the controller's input to the game object's rotation
     if (this.rotationSpeed !== undefined) {
       gameObject.rotation.x += pitchAxis * this.rotationSpeed * deltaTime;
@@ -42,37 +45,41 @@ export default class ControllableBehavior extends Behavior {
       // Clamp the pitch rotation to prevent flipping
       const moveSpeed = this.moveSpeed * (1 + shiftAxis);
 
-       // Calculate the forward and right vectors based on the game object's rotation
+      // Calculate the forward and right vectors based on the game object's rotation
       const forward = vec3(
         -Math.sin(gameObject.rotation.y),
         0,
-        -Math.cos(gameObject.rotation.y)
+        -Math.cos(gameObject.rotation.y),
       ); // The forward vector (could also be -backward vector)
       const right = vec3(
         Math.sin(gameObject.rotation.y + Math.PI / 2),
         0,
-        Math.cos(gameObject.rotation.y + Math.PI / 2)
+        Math.cos(gameObject.rotation.y + Math.PI / 2),
       ); // The right vector (could also be left vector)
 
       // Apply the controller's input to the game object's position
       gameObject.position = add(
         gameObject.position,
-        mult(forward, forwardAxis * moveSpeed * deltaTime)
+        mult(forward, forwardAxis * moveSpeed * deltaTime),
       );
       gameObject.position = add(
         gameObject.position,
-        mult(right, rightAxis * moveSpeed * deltaTime)
+        mult(right, rightAxis * moveSpeed * deltaTime),
       );
       gameObject.position = add(
         gameObject.position,
-        vec3(0, upAxis * moveSpeed * deltaTime, 0)
+        vec3(0, upAxis * moveSpeed * deltaTime, 0),
       );
     }
 
-
+    // When we click p / the debug button we log the position and rotation of the game object to the console for debugging purposes.
     if (this.controller.getDebugAxis() > 0) {
-      console.log(`Position: ${gameObject.position.x.toFixed(2)}, ${gameObject.position.y.toFixed(2)}, ${gameObject.position.z.toFixed(2)}`);
-      console.log(`Rotation: ${gameObject.rotation.x.toFixed(2)}, ${gameObject.rotation.y.toFixed(2)}, ${gameObject.rotation.z.toFixed(2)}`);
+      console.log(
+        `Position: ${gameObject.position.x.toFixed(2)}, ${gameObject.position.y.toFixed(2)}, ${gameObject.position.z.toFixed(2)}`,
+      );
+      console.log(
+        `Rotation: ${gameObject.rotation.x.toFixed(2)}, ${gameObject.rotation.y.toFixed(2)}, ${gameObject.rotation.z.toFixed(2)}`,
+      );
     }
   }
 }

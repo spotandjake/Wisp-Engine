@@ -124,7 +124,8 @@ class Renderer extends EventTarget {
   /** The main update loop for the renderer. */
   private update(timeStamp: number): void {
     // Compute the delta time since the last update
-    const deltaTime = this.lastTimeStamp === 0 ? 0 : (timeStamp - this.lastTimeStamp) / 1000;
+    const deltaTime =
+      this.lastTimeStamp === 0 ? 0 : (timeStamp - this.lastTimeStamp) / 1000;
     this.lastTimeStamp = timeStamp;
     // Emit an update event so the world can update all the objects in the scene.
     this.dispatchEvent(new RendererUpdateEvent(deltaTime, timeStamp));
@@ -152,7 +153,12 @@ class Renderer extends EventTarget {
         {
           view: context.context.getCurrentTexture().createView(),
           // The clear color for the render pass (sky color)
-          clearValue: { r: this.skyColor.x, g: this.skyColor.y, b: this.skyColor.z, a: 1 },
+          clearValue: {
+            r: this.skyColor.x,
+            g: this.skyColor.y,
+            b: this.skyColor.z,
+            a: 1,
+          },
           loadOp: "clear",
           storeOp: "store",
         },
@@ -171,7 +177,7 @@ class Renderer extends EventTarget {
     const lightBuffer: [Light, Vec3, Vec3][] = [];
     const renderQueue: { obj: RenderableGameObject; worldMatrix: Mat4 }[] = [];
     const workQueue = [{ obj: scene, worldMatrix: mat4() }];
-    // We default to using the camera's position and rotation in local space, 
+    // We default to using the camera's position and rotation in local space,
     // but we will update these values if we find the camera in the scene graph.
     let cameraPosition: Vec3 = this.camera.position;
     let cameraWorldMatrix: Mat4 = this.camera.getModelMatrix();
@@ -182,20 +188,36 @@ class Renderer extends EventTarget {
       // If this object is a camera, store the camera position for later use (While we have a reference this is the only way to get the camera position in world space)
       if (obj instanceof Camera && obj === this.camera) {
         // NOTE: We need the position in world space, so we extract it from the world matrix.
-        cameraPosition = vec3(childWorldMatrix[3][0], childWorldMatrix[3][1], childWorldMatrix[3][2]);
+        cameraPosition = vec3(
+          childWorldMatrix[3][0],
+          childWorldMatrix[3][1],
+          childWorldMatrix[3][2],
+        );
         cameraWorldMatrix = childWorldMatrix;
       }
       // If the object is a light, store the light data for later use
       if (obj instanceof Light) {
         // TODO: Validate this coordinate math
-        const rotationY = Math.asin(Math.max(-1, Math.min(1, childWorldMatrix[2][0])));
-        const rotationX = Math.atan2(-childWorldMatrix[2][1], childWorldMatrix[2][2]);
-        const rotationZ = Math.atan2(-childWorldMatrix[1][0], childWorldMatrix[0][0]);
+        const rotationY = Math.asin(
+          Math.max(-1, Math.min(1, childWorldMatrix[2][0])),
+        );
+        const rotationX = Math.atan2(
+          -childWorldMatrix[2][1],
+          childWorldMatrix[2][2],
+        );
+        const rotationZ = Math.atan2(
+          -childWorldMatrix[1][0],
+          childWorldMatrix[0][0],
+        );
         lightBuffer.push([
           obj,
           // Extract the position and direction from the world matrix
-          vec3(childWorldMatrix[3][0], childWorldMatrix[3][1], childWorldMatrix[3][2]),
-          vec3(rotationX, rotationY, rotationZ)
+          vec3(
+            childWorldMatrix[3][0],
+            childWorldMatrix[3][1],
+            childWorldMatrix[3][2],
+          ),
+          vec3(rotationX, rotationY, rotationZ),
         ]);
       }
       // If the object is render add it to the render queue
@@ -213,7 +235,14 @@ class Renderer extends EventTarget {
     const viewProjectionMatrix: Mat4 = mult(projectionMatrix, viewMatrix);
     // Render the objects in the render queue
     for (const { obj, worldMatrix } of renderQueue) {
-      obj.render(context, pass, worldMatrix, lightBuffer, viewProjectionMatrix, cameraPosition);
+      obj.render(
+        context,
+        pass,
+        worldMatrix,
+        lightBuffer,
+        viewProjectionMatrix,
+        cameraPosition,
+      );
     }
 
     // End the render pass and submit the commands to the GPU.
@@ -221,7 +250,6 @@ class Renderer extends EventTarget {
     // Submit the commands to the GPU.
     context.device.queue.submit([encoder.finish()]);
   }
-
 
   // Public api
   /** Sets the camera the renderer will render from. */

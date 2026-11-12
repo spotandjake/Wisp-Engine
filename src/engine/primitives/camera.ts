@@ -1,20 +1,12 @@
-import {
-  type Vec3,
-  type Mat4,
-  vec3,
-  mat4,
-  translationMatrix,
-  rotationMatrix,
-  mult,
-  inverse
-} from "mv-redux";
+import type { Vec3, Mat4 } from "mv-redux";
+import { vec3, mat4 } from "mv-redux";
 import GameObject from "../prototypes/gameObject";
 
 class Camera extends GameObject {
   /** The fov of the camera in radians. */
   public readonly fov: number;
   /** The aspect ratio of the camera, width/height. */
-  public readonly aspectRatio: number;
+  public aspectRatio: number;
   /** The near clipping plane of the camera. */
   public readonly near: number;
   /** The far clipping plane of the camera. */
@@ -38,7 +30,10 @@ class Camera extends GameObject {
     this.far = far;
   }
 
-  // TODO: Provide a good way of updating the aspect ratio
+  /** Sets the aspect ratio of the camera. */
+  public setAspectRatio(aspectRatio: number): void {
+    this.aspectRatio = aspectRatio;
+  }
 
   /** Returns the projection matrix for this camera. */
   public getProjectionMatrix(): Mat4 {

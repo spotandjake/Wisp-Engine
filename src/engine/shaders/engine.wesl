@@ -39,12 +39,8 @@ struct Light {
 struct LightBuffer {
   // How many lights exist
   count: u32,
-  // Padding to get 16 byte alignment
-  _padding0: u32,
-  _padding1: u32,
-  _padding2: u32,
   // The lights themselves
-  lights: array<Light>,
+  lights: array<Light, 64>,
 };
 
 /**

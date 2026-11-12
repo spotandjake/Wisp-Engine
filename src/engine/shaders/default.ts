@@ -1,64 +1,53 @@
 // This file contains the code for talking to the default shader on the gpu, it's located here so it's close to the definitions in `default.wesl` as it must stay in sync with it.
 import type { Mat4 } from "mv-redux";
-import { ShaderABI, MAT4_SIZE, writeMat4 } from "./generic";
+import type { ShaderDataDefinitions, StructuredView } from "webgpu-utils";
+import { makeStructuredView } from "webgpu-utils";
+import { ShaderABI } from "./generic";
 
 /** This class is responsible for managing the binary interface with the GPU. */
 export default class DefaultShaderABI extends ShaderABI {
-  public BindGroup: GPUBindGroup;
-  public BindGroupLayout: GPUBindGroupLayout;
+  /** A structured view for the gpu's model struct. */
+  private ModelView: Omit<StructuredView, "set"> & {
+    set: (data: { matrix: Mat4 }) => void;
+  };
+  /** The binding group of the default shader. */
+  protected BindGroup: GPUBindGroup;
+  /** The buffer for the model struct. */
+  private ModelBuffer: GPUBuffer;
 
-  public modelBuffer: GPUBuffer;
-
-  constructor(device: GPUDevice) {
-    super(device);
-    // Create our buffers
-    const modelBuffer = device.createBuffer({
-      size: MAT4_SIZE,
+  constructor(
+    device: GPUDevice,
+    defs: ShaderDataDefinitions,
+    layouts: GPUBindGroupLayout[],
+  ) {
+    super(device, defs, layouts);
+    // Construct our model view
+    this.ModelView = makeStructuredView(defs.uniforms.model);
+    // Create our buffer
+    this.ModelBuffer = device.createBuffer({
+      size: this.ModelView.arrayBuffer.byteLength,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    // Construct our bind group layout
-    const bindGroupLayout = device.createBindGroupLayout({
-      entries: [
-        // Renderer
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {
-            type: 'uniform',
-          },
-        }
-      ],
-    });
     // Construct our actual bind group
-    const bindGroup = device.createBindGroup({
-      layout: bindGroupLayout,
+    this.BindGroup = device.createBindGroup({
+      layout: layouts[1],
       entries: [
         {
           binding: 0,
-          resource: { buffer: modelBuffer },
-        }
+          resource: { buffer: this.ModelBuffer },
+        },
       ],
     });
-
-    // Store the bind group and layout in the class
-    this.BindGroup = bindGroup;
-    this.BindGroupLayout = bindGroupLayout;
-    
-    // Store the buffers in the class
-    this.modelBuffer = modelBuffer;
   }
 
   public passData(
     device: GPUDevice,
     pass: GPURenderPassEncoder,
-    modelMatrix: Mat4
+    modelMatrix: Mat4,
   ): void {
-    // Pack the model matrix and send it to the GPU
-    const rawModelBuffer = new ArrayBuffer(MAT4_SIZE);
-    writeMat4(modelMatrix, rawModelBuffer, 0);
-    device.queue.writeBuffer(this.modelBuffer, 0, rawModelBuffer);
-
-    // Bind the bindGroup to the pass
+    // Set the model matrix in the structured view and write it to the GPU buffer
+    this.ModelView.set({ matrix: modelMatrix });
+    device.queue.writeBuffer(this.ModelBuffer, 0, this.ModelView.arrayBuffer);
     pass.setBindGroup(1, this.BindGroup);
   }
 }

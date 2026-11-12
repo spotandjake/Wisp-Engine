@@ -24,7 +24,7 @@ import GameObject from './engine/prototypes/gameObject';
 import World from './engine/primitives/world';
 import Camera from './engine/primitives/camera';
 import Plane from './engine/primitives/plane';
-import Light from './engine/primitives/light';
+import Light, { LightType } from './engine/primitives/light';
 import Player from './objects/player';
 import House from './objects/house';
 
@@ -83,7 +83,7 @@ world.addChild(house);
 const sun = new Light(
   vec3(0, 10, 0),
   vec3(0, 0, 0),
-  "directional",
+  LightType.Directional,
   1.0,
   vec3(1, 1, 1),
   100.0
@@ -103,7 +103,7 @@ world.addChild(skyCamera);
 const flashLight = new Light(
   vec3(0, 0, 0),
   vec3(0, 0, 0),
-  "point",
+  LightType.Point,
   1.0,
   vec3(1, 1, 1),
   100.0

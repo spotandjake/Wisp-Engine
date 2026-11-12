@@ -1,4 +1,5 @@
-import type GameObject from './gameObject';
+// This file implements behaviors which are a composable system of adding functionality to game objects. Behaviors are applied to game objects and can be used to modify their properties or add new functionality.
+import type GameObject from "./gameObject";
 
 /** Implements a behavior that can be applied to a game object. */
 export default abstract class Behavior {

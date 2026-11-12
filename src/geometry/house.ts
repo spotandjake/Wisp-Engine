@@ -1,4 +1,4 @@
-import type { Geometry } from './geometry';
+import type { Geometry } from '../engine/geometry';
 
 /**
  * This was prebuilt using a small script, it is by no means an efficent layout or
