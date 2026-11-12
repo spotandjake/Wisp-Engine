@@ -1,0 +1,31 @@
+{
+  "name": "webgpu-renderer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A basic webgpu renderer.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "check": "tsc",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "WebGpu"
+  ],
+  "author": "Jake Follest",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@webgpu/types": "^0.1.74",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "wesl-plugin": "^0.6.81"
+  },
+  "dependencies": {
+    "mv-redux": "^0.1.9"
+  },
+  "allowScripts": {
+    "esbuild": true
+  }
+}

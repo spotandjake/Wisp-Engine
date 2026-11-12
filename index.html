@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script type="module" src="./main.ts"></script>
+    <script type="module" src="./src/main.ts"></script>
     <title>Assignment 2</title>
 
     <link rel="stylesheet" href="./style.css" />
@@ -31,7 +31,7 @@
             step="1"
             value="0.0"
           />
-          <span aria-hidden="true">3.00</span>
+          <span aria-hidden="true">0.00</span>
         </p>
         <p>
           <label for="cy">Camera <i>y</i>-position</label>
@@ -43,7 +43,7 @@
             step="1"
             value="0.0"
           />
-          <span aria-hidden="true">2.50</span>
+          <span aria-hidden="true">0.00</span>
         </p>
         <p>
           <label for="cz">Camera <i>z</i>-position</label>
@@ -55,7 +55,45 @@
             step="1"
             value="0.0"
           />
-          <span aria-hidden="true">3.00</span>
+          <span aria-hidden="true">0.00</span>
+        </p>
+      </div>
+      <div class="group">
+        <p>
+          <label for="cRotx">Camera <i>x</i>-rotation</label>
+          <input
+            id="cRotx"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+        <p>
+          <label for="cRoty">Camera <i>y</i>-rotation</label>
+          <input
+            id="cRoty"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+        <p>
+          <label for="cRotz">Camera <i>z</i>-rotation</label>
+          <input
+            id="cRotz"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
         </p>
       </div>
     </form>

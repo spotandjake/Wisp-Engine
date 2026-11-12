@@ -1,0 +1,3 @@
+# Tells VSCode to indent JS, TS, and shaders with 4-space indentation.
+[*.{js,ts,wgsl,wesl,json}]
+indent_size = 2

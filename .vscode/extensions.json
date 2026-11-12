@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    // Allows the provided `.editorconfig` file to work in VSCode.
+    "EditorConfig.EditorConfig",
+    // Provides syntax highlighting for WGSL/WESL files.
+    "wgsl-analyzer.wgsl-analyzer",
+  ]
+}
