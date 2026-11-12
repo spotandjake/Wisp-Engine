@@ -1,7 +1,7 @@
 // NOTE: While this logic could be on gameObject separating it provides more flexibility.
 import type { Vec3, Mat4 } from "mv-redux";
 import type { Arrays, ShaderDataDefinitions } from "webgpu-utils";
-import type { RendererContext } from "../renderer";
+import type { RendererContext, TextureReference } from "../renderer";
 import type { Geometry } from "../geometry";
 import type Light from "../primitives/light";
 import Material from "./material";
@@ -63,6 +63,7 @@ class RenderableGameObject extends GameObject {
   public render(
     context: RendererContext,
     pass: GPURenderPassEncoder,
+    textures: Map<TextureReference, GPUTexture>,
     worldMatrix: Mat4,
     lights: [Light, Vec3, Vec3][],
     viewProjectionMatrix: Mat4,
@@ -129,6 +130,7 @@ class RenderableGameObject extends GameObject {
     engineShaderAbi(
       baseShaderAbiInput,
       {
+        textures,
         lights,
         material: this.material,
         renderer: {

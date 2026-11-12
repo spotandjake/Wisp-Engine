@@ -1,4 +1,5 @@
 import { type Vec3, type Mat4, vec3, mult, mat4, inverse } from "mv-redux";
+import { createTextureFromImage } from 'webgpu-utils';
 import { WebGpuUnavailableError } from "./internal/errors";
 import type GameObject from "./prototypes/gameObject";
 import RenderableGameObject from "./prototypes/renderableGameObject";
@@ -35,6 +36,8 @@ export class RendererUpdateEvent extends Event {
   }
 }
 
+export type TextureReference = Symbol;
+
 /**
  * The main WebGPU renderer class.
  *
@@ -53,6 +56,8 @@ class Renderer extends EventTarget {
   private lastTimeStamp: number = 0;
   /** The sky color for the renderer. */
   private skyColor: Vec3;
+  /** A global store for all textures. */
+  private textureStore: Map<TextureReference, GPUTexture> = new Map();
 
   constructor(canvas: HTMLCanvasElement, skyColor: Vec3 = vec3(0.5, 0.7, 1.0)) {
     super();
@@ -66,6 +71,8 @@ class Renderer extends EventTarget {
     this.canvas = canvas;
     // Store our sky color for later use.
     this.skyColor = skyColor;
+    // Initialize the texture store for later use.
+    this.textureStore = new Map();
   }
 
   /**
@@ -238,6 +245,7 @@ class Renderer extends EventTarget {
       obj.render(
         context,
         pass,
+        this.textureStore,
         worldMatrix,
         lightBuffer,
         viewProjectionMatrix,
@@ -259,6 +267,20 @@ class Renderer extends EventTarget {
   /** Sets the scene to render. */
   public setScene(scene: GameObject): void {
     this.scene = scene;
+  }
+  /** Loads a texture from an image file. */
+  public async loadTexture(path: string): Promise<TextureReference> {
+    if (!this.context.initialized)
+      throw new Error("Renderer is not initialized.");
+    const context = this.context.context;
+    
+    // Load the texture from the image file and create a GPU texture
+    const texture = await createTextureFromImage(context.device, path, { mips: true });
+    // Create a unique reference for the texture and store it in the cache
+    const textureRef: TextureReference = Symbol("texture");
+    this.textureStore.set(textureRef, texture);
+    
+    return textureRef;
   }
 }
 

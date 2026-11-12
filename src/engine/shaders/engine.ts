@@ -1,6 +1,7 @@
 // This file contains the default shader ABI, which is used to interface with the engine shader. It provides a way to set up the necessary data and resources for rendering objects in the scene, we keep it next to the shader code so that we can keep it in sync with the shader code.
 import type { Mat4, Vec3, Vec4 } from "mv-redux";
 import type { StructuredView } from "webgpu-utils";
+import type { TextureReference } from "../renderer";
 import type { StandardShaderAbiInput, StructView } from "./generic";
 import type Light from "../primitives/light";
 import type Material from "../prototypes/material";
@@ -25,7 +26,7 @@ type GpuMaterial = {
   /** The base color the material itself. */
   base_color: Vec4;
   /** Weather or not the material has a texture. */
-  has_texture: boolean;
+  has_texture: number;
   /** How shiny the material is. */
   shininess: number;
 };
@@ -34,7 +35,6 @@ type GpuLightData = {
   light_type: number;
   range: number;
   intensity: number;
-  _padding: number;
   position: Vec3;
   color: Vec3;
   direction: Vec3;
@@ -48,6 +48,8 @@ type GpuLightBufferData = {
 // ============================
 /** The input for the engine shader ABI. */
 export interface EngineShaderAbiInput {
+  /** The textures to use for the engine shader. */
+  textures: Map<TextureReference, GPUTexture>;
   /** The lights in the scene. */
   lights: [Light, Vec3, Vec3][];
   /** The material to use for the engine shader. */
@@ -61,8 +63,14 @@ export interface EngineShaderAbiInput {
 /** The interface for the engine shader ABI. */
 export default (
   { device, defs, layouts, pass }: StandardShaderAbiInput,
-  { lights, material, renderer, worldMat }: EngineShaderAbiInput,
+  { textures, lights, material, renderer, worldMat }: EngineShaderAbiInput,
 ) => {
+  // Get the material texture if it has one
+  const materialTexture = material.Texture !== null ? textures.get(material.Texture) : null;
+  if (materialTexture === undefined && material.Texture !== null) {
+    throw new Error("Material texture not found in textures map.");
+  }
+
   // Create our structured views
   const rendererStructView = makeStructuredView(
     defs.uniforms.renderer,
@@ -98,9 +106,8 @@ export default (
   });
 
   // Create our texture and sampler for the material
-  const texture = device.createTexture({
+  const texture = materialTexture !== null && materialTexture !== undefined ? materialTexture : device.createTexture({
     size: {
-      // TODO: We should make this a property of the material, but for now, we just use a default size. --- IGNORE ---
       width: 1,
       height: 1,
     },
@@ -152,14 +159,12 @@ export default (
   worldStructView.set({ matrix: worldMat });
   device.queue.writeBuffer(worldStructBuffer, 0, getBuff(worldStructView));
   // Set the light data in the structured view and write it to the GPU buffer
-  // console.log(defs.storages.lightBuffer.typeDefinition.fields.lights.type.numElements);
   const gpuLights = lights
     .slice(0, lightStructView.views.lights.length)
-    .map(([light, position, direction]) => ({
+    .map(([light, position, direction]): GpuLightData => ({
       light_type: light.type,
       range: light.range,
       intensity: light.intensity,
-      _padding: 0,
       position,
       color: light.color,
       direction,
@@ -169,7 +174,7 @@ export default (
   // Set the material data in the structured view and write it to the GPU buffer
   materialStructView.set({
     base_color: material.BaseColor,
-    has_texture: material.HasTexture,
+    has_texture: material.Texture !== null ? 1 : 0,
     shininess: material.Shininess,
   });
   device.queue.writeBuffer(
@@ -177,16 +182,6 @@ export default (
     0,
     getBuff(materialStructView),
   );
-  // TODO: Handle setting the texture
-  // Set the texture based on the material's texture if it has one.
-  // device.queue.copyExternalImageToTexture(
-  //   { source: bitmap },
-  //   { texture },
-  //   {
-  //       width: bitmap.width,
-  //       height: bitmap.height,
-  //   }
-  // );
 
   // Bind the bind group to the render pass
   pass.setBindGroup(BIND_GROUP, bindGroup);

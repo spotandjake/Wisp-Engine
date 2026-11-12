@@ -1,18 +1,18 @@
 import type { Vec4 } from "mv-redux";
+import type { TextureReference } from "../renderer";
 
 /** A material for a renderable game object. */
 export default class Material {
   /** The base color of the material. */
   public BaseColor: Vec4;
-  /** Whether the material has a texture. */
-  // TODO: We actually want to have a texture object here, that is optional
-  public HasTexture: boolean;
+  /** The texture of the material. */
+  public Texture: TextureReference | null;
   /** The shininess of the material. */
   public Shininess: number;
 
-  constructor(base_color: Vec4, has_texture: boolean, shininess: number) {
+  constructor(base_color: Vec4, texture: TextureReference | null, shininess: number) {
     this.BaseColor = base_color;
-    this.HasTexture = has_texture;
+    this.Texture = texture;
     this.Shininess = shininess;
   }
 }

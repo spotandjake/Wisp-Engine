@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "check": "tsc",
+    "check": "tsc --noEmit",
     "preview": "vite preview"
   },
   "keywords": [

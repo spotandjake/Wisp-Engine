@@ -45,6 +45,8 @@ try {
   throw error;
 }
 
+// Load our textures
+const groundTexture = await renderer.loadTexture('./src/textures/grass.png');
 // Create some behaviors
 const controller = new Controller(window);
 const controllableBehavior = new ControllableBehavior(controller, 10, 2);
@@ -72,7 +74,7 @@ const ground = new Plane(
   vec3(0, 0, 0),
   vec3(1000, 1, 1000),
   // Grass Green ground
-  new Material(vec4(0.0, 1.0, 0.0, 1.0), false, 32)
+  new Material(vec4(1.0, 1.0, 1.0, 1.0), groundTexture, 32)
 );
 world.addChild(ground);
 const house = new House(

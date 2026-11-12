@@ -22,7 +22,7 @@ class House extends GameObject {
         /** Creates a new house part. */
         constructor(position: Vec3, rotation: Vec3, scale: Vec3) {
           // Create a new material for this part, using the color from the geometry.
-          const material = new Material(vec4(1, 1, 1, 1), false, 50);
+          const material = new Material(vec4(1, 1, 1, 1), null, 50);
 
           super(position, rotation, scale, material);
         }
