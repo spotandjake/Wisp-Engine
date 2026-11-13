@@ -21,7 +21,7 @@ const convertGltfMaterialToEngineMaterial = async (
     vec4(1, 1, 1, 1),
     vec4(1, 1, 1, 1),
     vec4(1, 1, 1, 1),
-    32,
+    16,
     null,
   );
   if (gltfMaterial === null) return fallbackMaterial;
