@@ -9,20 +9,20 @@ var<storage, read> lightBuffer: LightBuffer;
 @group(0) @binding(2)
 var<uniform> material: Material;
 @group(0) @binding(3)
-var base_texture: texture_2d<f32>;
+var baseTexture: texture_2d<f32>;
 @group(0) @binding(4)
-var base_sampler: sampler;
+var baseSampler: sampler;
 
 // Renderer
 // =========================
 /** Common renderer related attributes. */
 struct Renderer {
   /** The ambient light in the scene. */
-  scene_ambient: vec3<f32>,
+  sceneAmbient: vec3<f32>,
   /** The position of the camera in the scene. */
-  camera_position: vec3<f32>,
+  cameraPosition: vec3<f32>,
   /** The view projection matrix of the camera. */
-  view_projection: mat4x4<f32>,
+  viewProjection: mat4x4<f32>,
 }
 
 
@@ -35,17 +35,17 @@ const LIGHT_TYPE_POINT: u32 = 1u;
 /** A specific light within our scene. */
 struct Light {
   /** The specific type of the light, modifies the behavior of the light */
-  light_type: Light_Type,
+  lightType: Light_Type,
   /** The range of the light (for point lights) */
   range: f32,
   /** The intensity of the light (for point lights) */
   intensity: f32,
   /** The ambient color of the light */
-  ambient_color: vec4<f32>,
+  ambientColor: vec4<f32>,
   /** The diffuse color of the light */
-  diffuse_color: vec4<f32>,
+  diffuseColor: vec4<f32>,
   /** The specular color of the light */
-  specular_color: vec4<f32>,
+  specularColor: vec4<f32>,
 
   /** The position of the light in world space (for point lights) */
   position: vec3<f32>,
@@ -64,28 +64,28 @@ struct LightBuffer {
 /** A material for a 3D object. */
 struct Material {
   /** The ambient color of the material. */
-  ambient_color: vec4<f32>,
+  ambientColor: vec4<f32>,
   /** The diffuse color of the material. */
-  diffuse_color: vec4<f32>,
+  diffuseColor: vec4<f32>,
   /** The specular color of the material. */
-  specular_color: vec4<f32>,
+  specularColor: vec4<f32>,
   /** How shiny the material is. */
   shininess: f32,
    /** Weather or not the material has a texture. */
-  has_texture: u32,
+  hasTexture: u32,
 };
 
 struct LightingComponents {
-  diffuse_light: vec3<f32>,
-  specular_light: vec3<f32>,
+  diffuse: vec3<f32>,
+  specular: vec3<f32>,
 }
 
 
 fn compute_lighting(material: Material, worldPosition: vec3<f32>, normal: vec3<f32>) -> LightingComponents {
-  let viewPosition = renderer.camera_position;
+  let viewPosition = renderer.cameraPosition;
 
   // Blinn-Phong lighting model
-  var diffuseLighting = renderer.scene_ambient * material.ambient_color.rgb;
+  var diffuseLighting = renderer.sceneAmbient * material.ambientColor.rgb;
   var specularLighting = vec3<f32>(0.0);
   let n = normalize(normal);                          // Surface normal
   let v = normalize(viewPosition - worldPosition);   // Position -> View
@@ -95,7 +95,7 @@ fn compute_lighting(material: Material, worldPosition: vec3<f32>, normal: vec3<f
     var l: vec3<f32> = vec3<f32>(0.0); // Light direction
     var attenuation = 1.0;
     // Different light types have different properties, so we need to handle them differently.
-    switch (light.light_type) {
+    switch (light.lightType) {
       // Directional lights have a direction but no distance falloff.
       case LIGHT_TYPE_DIRECTIONAL: {
         l = normalize(-light.direction);
@@ -121,13 +121,13 @@ fn compute_lighting(material: Material, worldPosition: vec3<f32>, normal: vec3<f
 
     // Compute the diffuse and specular lighting for this light, based on the Blinn-Phong reflection model.
     let Kd = max(dot(l, n), 0.0);
-    let ambient = light.ambient_color.rgb * material.ambient_color.rgb;
-    let diffuse = Kd * light.diffuse_color.rgb;
+    let ambient = light.ambientColor.rgb * material.ambientColor.rgb;
+    let diffuse = Kd * light.diffuseColor.rgb;
     var specular = vec3<f32>(0.0);
     if (Kd > 0.0) {
       let h = normalize(l + v);
       let Ks = pow(max(dot(h, n), 0.0), material.shininess);
-      specular = Ks * light.specular_color.rgb * material.specular_color.rgb;
+      specular = Ks * light.specularColor.rgb * material.specularColor.rgb;
     }
 
     diffuseLighting += attenuation * (ambient + diffuse);
@@ -135,8 +135,8 @@ fn compute_lighting(material: Material, worldPosition: vec3<f32>, normal: vec3<f
   }
 
   var lightingComponents: LightingComponents;
-  lightingComponents.diffuse_light = diffuseLighting;
-  lightingComponents.specular_light = specularLighting;
+  lightingComponents.diffuse = diffuseLighting;
+  lightingComponents.specular = specularLighting;
 
   return lightingComponents;
 }
@@ -161,13 +161,13 @@ fn apply_fragment_processing(
   let lighting = compute_lighting(material, worldPosition, normal);
   // Get the texture color if needed
   var textureColor = vec4<f32>(1.0);
-  if (material.has_texture == 1u) {
-    textureColor = textureSample(base_texture, base_sampler, uv);
+  if (material.hasTexture == 1u) {
+    textureColor = textureSample(baseTexture, baseSampler, uv);
   }
 
   // Compute the final color of the fragment based on the material properties
-  let surfaceColor = material.diffuse_color * vertexColor * textureColor;
-  let hdrColor = surfaceColor.rgb * lighting.diffuse_light + lighting.specular_light;
+  let surfaceColor = material.diffuseColor * vertexColor * textureColor;
+  let hdrColor = surfaceColor.rgb * lighting.diffuse + lighting.specular;
 
   // Apply tone mapping to the final color
   let mappedRgb = hdrColor / (hdrColor + vec3<f32>(1.0));

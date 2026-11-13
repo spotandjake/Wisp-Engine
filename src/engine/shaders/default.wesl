@@ -46,13 +46,13 @@ struct VertexOutput {
 @vertex
 fn vertex_main(input: VertexInput) -> VertexOutput {
   // Compute the position
-  let world_position = model.modelMatrix * vec4<f32>(input.position, 1.0);
-  let clip_position = renderer.view_projection * world_position;
+  let worldPosition = model.modelMatrix * vec4<f32>(input.position, 1.0);
+  let clipPosition = renderer.viewProjection * worldPosition;
   let normal = normalize(model.normalMatrix * input.normal);
   // Pack our output 
   var output: VertexOutput;
-  output.position = clip_position;
-  output.worldPosition = world_position.xyz;
+  output.position = clipPosition;
+  output.worldPosition = worldPosition.xyz;
   output.normal = normal;
   output.color = input.color;
   output.uv = input.uv;

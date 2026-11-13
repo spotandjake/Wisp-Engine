@@ -15,40 +15,40 @@ const BIND_GROUP = 0;
 // ============================
 export type RendererData = {
   /** The ambient light in the scene. */
-  scene_ambient: Vec3;
+  sceneAmbient: Vec3;
   /** The position of the camera in the scene. */
-  camera_position: Vec3;
+  cameraPosition: Vec3;
   /** The view projection matrix of the camera. */
-  view_projection: Mat4;
+  viewProjection: Mat4;
 };
 
 /** The material struct we pass to the gpu. */
 type GpuMaterial = {
   /** The ambient color of the material. */
-  ambient_color: Vec4;
+  ambientColor: Vec4;
   /** The diffuse color of the material. */
-  diffuse_color: Vec4;
+  diffuseColor: Vec4;
   /** The specular color of the material. */
-  specular_color: Vec4;
+  specularColor: Vec4;
   /** How shiny the material is. */
   shininess: number;
   /** Weather or not the material has a texture. */
-  has_texture: number;
+  hasTexture: number;
 };
 
 type GpuLightData = {
   /** The specific type of the light, modifies the behavior of the light */
-  light_type: number;
+  lightType: number;
   /** The range of the light (for point lights) */
   range: number;
   /** The intensity of the light (for point lights) */
   intensity: number;
   /** The ambient color of the light */
-  ambient_color: Vec4;
+  ambientColor: Vec4;
   /** The diffuse color of the light */
-  diffuse_color: Vec4;
+  diffuseColor: Vec4;
   /** The specular color of the light */
-  specular_color: Vec4;
+  specularColor: Vec4;
 
   /** The position of the light in world space (for point lights) */
   position: Vec3;
@@ -155,9 +155,9 @@ export default (
   const getBuff = (view: StructuredView) => view.arrayBuffer;
   // Set the renderer data in the structured view and write it to the GPU buffer
   rendererStructView.set({
-    scene_ambient: renderer.scene_ambient,
-    camera_position: renderer.camera_position,
-    view_projection: renderer.view_projection,
+    sceneAmbient: renderer.sceneAmbient,
+    cameraPosition: renderer.cameraPosition,
+    viewProjection: renderer.viewProjection,
   });
   device.queue.writeBuffer(
     rendererStructBuffer,
@@ -168,12 +168,12 @@ export default (
   const gpuLights = lights
     .slice(0, lightStructView.views.lights.length)
     .map(([light, position, direction]): GpuLightData => ({
-      light_type: light.Type,
+      lightType: light.Type,
       range: light.Range,
       intensity: light.Intensity,
-      ambient_color: light.AmbientColor,
-      diffuse_color: light.DiffuseColor,
-      specular_color: light.SpecularColor,
+      ambientColor: light.AmbientColor,
+      diffuseColor: light.DiffuseColor,
+      specularColor: light.SpecularColor,
       position: position,
       direction: direction,
     }));
@@ -181,11 +181,11 @@ export default (
   device.queue.writeBuffer(lightStructBuffer, 0, getBuff(lightStructView));
   // Set the material data in the structured view and write it to the GPU buffer
   materialStructView.set({
-    ambient_color: material.AmbientColor,
-    diffuse_color: material.DiffuseColor,
-    specular_color: material.SpecularColor,
+    ambientColor: material.AmbientColor,
+    diffuseColor: material.DiffuseColor,
+    specularColor: material.SpecularColor,
     shininess: material.Shininess,
-    has_texture: materialTexture !== null ? 1 : 0,
+    hasTexture: materialTexture !== null ? 1 : 0,
   });
   device.queue.writeBuffer(
     materialStructBuffer,

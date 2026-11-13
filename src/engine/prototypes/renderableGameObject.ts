@@ -159,9 +159,9 @@ class RenderableGameObject extends GameObject {
       lights,
       material: this.material,
       renderer: {
-        scene_ambient: sceneAmbient,
-        camera_position: cameraPosition,
-        view_projection: viewProjectionMatrix,
+        sceneAmbient: sceneAmbient,
+        cameraPosition: cameraPosition,
+        viewProjection: viewProjectionMatrix,
       },
     });
 
