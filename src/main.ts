@@ -51,6 +51,7 @@ try {
 // Initiate our GLTF loader
 const loadGLTF = getGLTFLoader(renderer);
 const House = await loadGLTF("./models/house/scene.gltf");
+const Bed = await loadGLTF("./models/bed/scene.gltf");
 
 // Create some behaviors
 const controller = new Controller(window);
@@ -76,6 +77,13 @@ const ground = new Plane(
 world.addChild(ground);
 const house = new House(vec3(0, 1, 0), vec3(0, 0, 0), vec3(0.03, 0.03, 0.03));
 world.addChild(house);
+const bed = new Bed(
+  vec3(6, 1.5, 20),
+  vec3(-Math.PI / 2, (Math.PI / 2) * 2, 0),
+  vec3(4),
+);
+world.addChild(bed);
+
 const sun = new Light(
   vec3(0, 10, 0),
   vec3(radians(-45), radians(45), 0),

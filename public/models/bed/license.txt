@@ -1,0 +1,8 @@
+Model Information:
+* title:	Realistic Bed 3D Model
+* source:	https://sketchfab.com/3d-models/realistic-bed-3d-model-9b97ab81ecba4381b81c5ed8e685bb0a
+* author:	dengxiart (https://sketchfab.com/dengxiart)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works

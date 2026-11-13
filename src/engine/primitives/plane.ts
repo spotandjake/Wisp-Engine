@@ -3,6 +3,16 @@ import type { Geometry } from "../geometry";
 import type Material from "../prototypes/material";
 import RenderableGameObject from "../prototypes/renderableGameObject";
 
+// NOTE: It's best to put this here where we don't have to reallocate it every time we create a plane. This is a static geometry that can be shared across all planes.
+const PLANE_GEOMETRY: Geometry = {
+  positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1]),
+  normals: new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]),
+  uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
+  indices: new Uint16Array([0, 2, 1, 0, 3, 2]),
+  // Color it white by default
+  colors: new Float32Array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+};
+
 /** A basic plane in 3D space. */
 export default class Plane extends RenderableGameObject {
   /** Creates a new plane. */
@@ -19,15 +29,6 @@ export default class Plane extends RenderableGameObject {
 
   /** Returns the geometry of the plane. */
   protected override getGeometry(): Geometry {
-    return {
-      positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1]),
-      normals: new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]),
-      uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
-      indices: new Uint16Array([0, 2, 1, 0, 3, 2]),
-      // Color it white by default
-      colors: new Float32Array([
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      ]),
-    };
+    return PLANE_GEOMETRY;
   }
 }

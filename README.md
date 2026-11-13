@@ -72,6 +72,8 @@ These dependencies are used during development and are not required as runtime l
 
 The house model has been taken from SketchFab, and was made by `Lodgelus`, it is available [here](https://sketchfab.com/3d-models/house-with-interior-and-porch-51aa0e8c9b224262af9df8942761e5c7).
 
+The bed model has been taken from SketchFab, and was made by `dengxiart`, it is available [here](https://sketchfab.com/3d-models/realistic-bed-3d-model-9b97ab81ecba4381b81c5ed8e685bb0a).
+
 ## License
 
 Wisp Engine is open source and distributed under the terms of the license included in this repository. See the `LICENSE` file for details.

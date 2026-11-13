@@ -1,6 +1,10 @@
 // NOTE: While this logic could be on gameObject separating it provides more flexibility.
 import type { Vec3 } from "mv-redux";
-import type { Arrays, ShaderDataDefinitions } from "webgpu-utils";
+import type {
+  Arrays,
+  ShaderDataDefinitions,
+  BuffersAndAttributes,
+} from "webgpu-utils";
 import type { PassRendererContext } from "../renderer";
 import type { Geometry } from "../geometry";
 import Material from "./material";
@@ -19,22 +23,53 @@ import defaultShaderAbi from "../shaders/default";
 
 import Shader from "../shaders/default.wesl?static";
 
+type ShaderCache = {
+  shaderModule: GPUShaderModule;
+  attributes: BuffersAndAttributes;
+  defs: ShaderDataDefinitions;
+  // Cache checks
+  device: GPUDevice;
+  geometry: Geometry;
+};
+
 // Memoized lazy shader and definition initialization, so we can share across objects
-let shaderCache:
-  | {
-      device: GPUDevice;
-      shaderModule: GPUShaderModule;
-      defs: ShaderDataDefinitions;
-    }
-  | undefined = undefined;
+let shaderCache: ShaderCache | undefined = undefined;
 const getShaderModuleAndDefs = (
   device: GPUDevice,
-): { shaderModule: GPUShaderModule; defs: ShaderDataDefinitions } => {
-  if (shaderCache !== undefined && device === shaderCache.device)
+  geometry: Geometry,
+  vertexCount: number,
+): ShaderCache => {
+  if (
+    shaderCache !== undefined &&
+    device === shaderCache.device &&
+    geometry === shaderCache.geometry
+  )
     return shaderCache;
+  // Compile our module and get our definitions
   const shaderModule = device.createShaderModule({ code: Shader });
   const defs = makeShaderDataDefinitions(Shader);
-  shaderCache = { device, shaderModule, defs };
+
+  // Construct our attribute layout from shader data definitions
+  let attributeBuffers: Arrays = {
+    positions: geometry.positions,
+    normals: geometry.normals,
+    colors:
+      geometry.colors !== undefined
+        ? geometry.colors
+        : new Float32Array(vertexCount * 4).fill(1),
+    uvs:
+      geometry.uvs !== undefined
+        ? geometry.uvs
+        : new Float32Array(vertexCount * 2),
+  };
+  if (geometry.indices !== undefined)
+    attributeBuffers = { ...attributeBuffers, indices: geometry.indices };
+  const attributes = createBuffersAndAttributesFromArrays(
+    device,
+    attributeBuffers,
+  );
+
+  shaderCache = { device, shaderModule, defs, attributes, geometry };
   return shaderCache;
 };
 
@@ -82,26 +117,10 @@ class RenderableGameObject extends GameObject {
     const vertexCount = geometry.positions.length / 3;
 
     // Compile the shader and get our definitions
-    const { shaderModule, defs } = getShaderModuleAndDefs(webgpu.device);
-
-    // Construct our attribute layout from shader data definitions
-    let attributeBuffers: Arrays = {
-      positions: geometry.positions,
-      normals: geometry.normals,
-      colors:
-        geometry.colors !== undefined
-          ? geometry.colors
-          : new Float32Array(vertexCount * 4).fill(1),
-      uvs:
-        geometry.uvs !== undefined
-          ? geometry.uvs
-          : new Float32Array(vertexCount * 2),
-    };
-    if (geometry.indices !== undefined)
-      attributeBuffers = { ...attributeBuffers, indices: geometry.indices };
-    const attributes = createBuffersAndAttributesFromArrays(
+    const { shaderModule, defs, attributes } = getShaderModuleAndDefs(
       webgpu.device,
-      attributeBuffers,
+      geometry,
+      vertexCount,
     );
 
     // Construct our pipeline
