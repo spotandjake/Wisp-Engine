@@ -3,6 +3,7 @@ import { type Vec3, vec3, vec4 } from "mv-redux";
 import type Renderer from "../engine/renderer";
 import GameObject from "../engine/prototypes/gameObject";
 import Camera from "../engine/primitives/camera";
+import Material from "../engine/prototypes/material";
 import Cube, { type FaceColors } from "../engine/primitives/cube";
 
 class Player extends GameObject {
@@ -49,6 +50,15 @@ class Player extends GameObject {
     const armOffset = body.width / 2 + arm.width / 2;
     const legOffset = body.width / 2 - leg.width / 2;
 
+    // Material
+    const material = new Material(
+      vec4(1, 1, 1, 1),
+      vec4(1, 1, 1, 1),
+      vec4(1, 1, 1, 1),
+      32,
+      null,
+    );
+
     // Colors
     const faces = (r: number, g: number, b: number): FaceColors => [
       vec4(r, g, b, 1),
@@ -70,6 +80,7 @@ class Player extends GameObject {
       vec3(-head.width / 2, head.height / 2, -head.depth / 2),
       vec3(0, 0, 0),
       vec3(head.width, head.height, head.depth),
+      material,
       faces(1, 0, 0),
     );
     // Camera sits at the head pivot.
@@ -88,6 +99,7 @@ class Player extends GameObject {
       ),
       vec3(0, 0, 0),
       vec3(body.width, body.height, body.depth),
+      material,
       faces(0, 1, 0),
     );
 
@@ -101,6 +113,7 @@ class Player extends GameObject {
         vec3(side * armOffset - arm.width / 2, leg.height, -arm.depth / 2),
         vec3(0, 0, 0),
         vec3(arm.width, arm.height, arm.depth),
+        material,
         faces(0, 0, 1),
       );
 
@@ -115,6 +128,7 @@ class Player extends GameObject {
         vec3(side * legOffset - leg.width / 2, 0, -leg.depth / 2),
         vec3(0, 0, 0),
         vec3(leg.width, leg.height, leg.depth),
+        material,
         faces(1, 1, 0),
       );
 

@@ -131,7 +131,20 @@ world.addChild(player);
 const itemSliderBehavior = (gameObject: GameObject) =>
   new SliderBehavior(gameObject, itemPositions, itemRotations, itemScales);
 
-const itemA = new Cube(vec3(20, 2, -10), vec3(0, 0, 0), vec3(2, 2, 2));
+const cubeMaterial = new Material(
+  vec4(1, 1, 1, 1),
+  vec4(1, 1, 1, 1),
+  vec4(1, 1, 1, 1),
+  32,
+  null,
+);
+
+const itemA = new Cube(
+  vec3(20, 2, -10),
+  vec3(0, 0, 0),
+  vec3(2, 2, 2),
+  cubeMaterial,
+);
 const itemASelection = new SelectionBehavior(
   itemSliderBehavior(itemA),
   itemToggles.cubeA,
@@ -139,7 +152,12 @@ const itemASelection = new SelectionBehavior(
 itemA.addBehavior(itemASelection);
 world.addChild(itemA);
 
-const itemB = new Cube(vec3(20, 2, 0), vec3(0, 0, 0), vec3(2, 2, 2));
+const itemB = new Cube(
+  vec3(20, 2, 0),
+  vec3(0, 0, 0),
+  vec3(2, 2, 2),
+  cubeMaterial,
+);
 const itemBSelection = new SelectionBehavior(
   itemSliderBehavior(itemB),
   itemToggles.cubeB,
@@ -147,7 +165,12 @@ const itemBSelection = new SelectionBehavior(
 itemB.addBehavior(itemBSelection);
 world.addChild(itemB);
 
-const itemC = new Cube(vec3(0, 0, 5), vec3(0, 0, 0), vec3(1, 1, 1));
+const itemC = new Cube(
+  vec3(0, 0, 5),
+  vec3(0, 0, 0),
+  vec3(1, 1, 1),
+  cubeMaterial,
+);
 const itemCSelection = new SelectionBehavior(
   itemSliderBehavior(itemC),
   itemToggles.cubeC,
