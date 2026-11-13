@@ -13,6 +13,7 @@
     <canvas id="screen" width="512" height="512"></canvas>
 
     <form class="menu" id="menu">
+      <!-- Camera Controls -->
       <div class="group">
         <p>
           <label for="ct">Camera: </label>
@@ -21,7 +22,7 @@
       </div>
       <div class="group">
         <p>
-          <label for="cx">Camera <i>x</i>-position</label>
+          <label for="cx">Camera <i>x</i>-position:</label>
           <input
             id="cx"
             type="range"
@@ -33,7 +34,7 @@
           <span aria-hidden="true">0.00</span>
         </p>
         <p>
-          <label for="cy">Camera <i>y</i>-position</label>
+          <label for="cy">Camera <i>y</i>-position:</label>
           <input
             id="cy"
             type="range"
@@ -45,7 +46,7 @@
           <span aria-hidden="true">0.00</span>
         </p>
         <p>
-          <label for="cz">Camera <i>z</i>-position</label>
+          <label for="cz">Camera <i>z</i>-position:</label>
           <input
             id="cz"
             type="range"
@@ -59,7 +60,7 @@
       </div>
       <div class="group">
         <p>
-          <label for="cRotx">Camera <i>x</i>-rotation</label>
+          <label for="cRotx">Camera <i>x</i>-rotation:</label>
           <input
             id="cRotx"
             type="range"
@@ -71,7 +72,7 @@
           <span aria-hidden="true">0.00</span>
         </p>
         <p>
-          <label for="cRoty">Camera <i>y</i>-rotation</label>
+          <label for="cRoty">Camera <i>y</i>-rotation:</label>
           <input
             id="cRoty"
             type="range"
@@ -83,7 +84,7 @@
           <span aria-hidden="true">0.00</span>
         </p>
         <p>
-          <label for="cRotz">Camera <i>z</i>-rotation</label>
+          <label for="cRotz">Camera <i>z</i>-rotation:</label>
           <input
             id="cRotz"
             type="range"
@@ -93,6 +94,161 @@
             value="0.0"
           />
           <span aria-hidden="true">0.00</span>
+        </p>
+      </div>
+      <!-- Object Controls -->
+      <div class="group">
+        <p id="itemChoice">
+          <label for="ct">Item: </label>
+          <input type="radio" id="itemA" name="ct" value="cubeA" checked />
+          <input type="radio" id="itemB" name="ct" value="cubeB" />
+          <input type="radio" id="itemC" name="ct" value="cubeC" />
+        </p>
+      </div>
+      <div class="group">
+        <p>
+          <label for="ix">Item <i>x</i>-position:</label>
+          <input
+            id="ix"
+            type="range"
+            min="-100"
+            max="100"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+        <p>
+          <label for="iy">Item <i>y</i>-position:</label>
+          <input
+            id="iy"
+            type="range"
+            min="-100"
+            max="100"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+        <p>
+          <label for="iz">Item <i>z</i>-position:</label>
+          <input
+            id="iz"
+            type="range"
+            min="-100"
+            max="100"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+      </div>
+      <div class="group">
+        <p>
+          <label for="iRotx">Item <i>x</i>-rotation:</label>
+          <input
+            id="iRotx"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+        <p>
+          <label for="iRoty">Item <i>y</i>-rotation:</label>
+          <input
+            id="iRoty"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+        <p>
+          <label for="iRotz">Item <i>z</i>-rotation:</label>
+          <input
+            id="iRotz"
+            type="range"
+            min="-180"
+            max="180"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+      </div>
+      <div class="group">
+        <p>
+          <label for="iScalex">Item <i>x</i>-scale:</label>
+          <input
+            id="iScalex"
+            type="range"
+            min="0"
+            max="10"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+        <p>
+          <label for="iScaley">Item <i>y</i>-scale:</label>
+          <input
+            id="iScaley"
+            type="range"
+            min="0"
+            max="10"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+        <p>
+          <label for="iScalez">Item <i>z</i>-scale:</label>
+          <input
+            id="iScalez"
+            type="range"
+            min="0"
+            max="10"
+            step="1"
+            value="0.0"
+          />
+          <span aria-hidden="true">0.00</span>
+        </p>
+      </div>
+      <div class="group">
+        <p>
+          You can control the player camera with the keyboard, using the keys
+          below:
+        </p>
+        <div class="key-controls">
+          <ul>
+            <li><kbd>W</kbd> - Forward</li>
+            <li><kbd>S</kbd> - Backward</li>
+            <li><kbd>A</kbd> - Left</li>
+            <li><kbd>D</kbd> - Right</li>
+            <li><kbd>Q</kbd> - Down</li>
+            <li><kbd>E</kbd> - Up</li>
+          </ul>
+          <ul>
+            <li><kbd>ArrowUp</kbd> - Look up</li>
+            <li><kbd>ArrowDown</kbd> - Look down</li>
+            <li><kbd>ArrowLeft</kbd> - Look left</li>
+            <li><kbd>ArrowRight</kbd> - Look right</li>
+          </ul>
+        </div>
+        <p>
+          The skyCamera can be controlled by using the camera sliders, and the
+          toggle can be used to switch between the player camera and the
+          skyCamera.
+        </p>
+        <p>
+          The three cubes in the scene can be selected using the radio buttons,
+          and their position, rotation, and scale can be adjusted using the
+          sliders.
         </p>
       </div>
     </form>

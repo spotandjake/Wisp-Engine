@@ -27,6 +27,12 @@ export default class Controller {
       if (!(event instanceof KeyboardEvent)) return;
       this.keys.delete(event.code);
     });
+
+    // Edge cases where we may not get a keyup
+    window.addEventListener("blur", () => this.keys.clear());
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) this.keys.clear();
+    });
   }
   /** Returns the forward/backward axis of the controller. */
   public getForwardAxis(): number {

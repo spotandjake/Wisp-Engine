@@ -62,6 +62,7 @@ class GameObject {
     // Apply all behaviors to this game object
     for (const behavior of this.behaviors) {
       behavior.apply(this, deltaTime);
+      behavior.clean();
     }
     // Update all children
     for (const child of this.children) {

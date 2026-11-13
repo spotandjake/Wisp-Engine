@@ -7,4 +7,7 @@ export default abstract class Behavior {
 
   /** Applies the behavior to the game object. */
   public abstract apply(gameObject: GameObject, deltaTime: number): void;
+
+  /** Cleans up after a frame. */
+  public abstract clean(): void;
 }

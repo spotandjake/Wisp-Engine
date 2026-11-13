@@ -86,4 +86,6 @@ export default class ControllableBehavior extends Behavior {
       );
     }
   }
+
+  public clean(): void {}
 }

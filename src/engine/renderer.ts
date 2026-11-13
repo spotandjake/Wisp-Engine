@@ -18,6 +18,25 @@ export type RendererContext = {
   /** The shared WebGPU depth texture. */
   depthTexture: GPUTexture;
 };
+
+/** The context for a render pass. */
+export type PassRendererContext = {
+  webgpu: RendererContext;
+  /** The current render pass encoder. */
+  pass: GPURenderPassEncoder;
+  /** The view-projection matrix for the current render pass. */
+  viewProjectionMatrix: Mat4;
+  /** The position of the camera in the scene. */
+  cameraPosition: Vec3;
+  /** World matrix for the current render pass. */
+  worldMatrix: Mat4;
+  /** The ambient light color for the current render pass. */
+  ambientLightColor: Vec3;
+  /** The light buffer for the current render pass. */
+  lights: [Light, Vec3, Vec3][];
+  /** The texture store for the current render pass. */
+  textureStore: Map<TextureReference, GPUTexture>;
+};
 /** The internal context for the renderer. */
 type InternalRendererContext =
   // Lock based on initialization state
@@ -281,15 +300,16 @@ class Renderer extends EventTarget {
     const viewProjectionMatrix: Mat4 = mult(projectionMatrix, viewMatrix);
     // Render the objects in the render queue
     for (const { obj, worldMatrix } of renderQueue) {
-      obj.render(
-        context,
+      obj.render({
+        webgpu: context,
         pass,
-        this.textureStore,
-        worldMatrix,
-        lightBuffer,
         viewProjectionMatrix,
         cameraPosition,
-      );
+        worldMatrix,
+        ambientLightColor: this.skyColor,
+        lights: lightBuffer,
+        textureStore: this.textureStore,
+      });
     }
 
     // End the render pass and submit the commands to the GPU.

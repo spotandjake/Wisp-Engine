@@ -9,6 +9,12 @@ export type Vector3InputElements = {
   z?: HTMLInputElement;
 };
 
+type VectorUpdate = {
+  x: number | null;
+  y: number | null;
+  z: number | null;
+};
+
 /**
  * This behavior allows a game object to be controlled by a set of HTML input elements that represent
  * the position, rotation, and scale of the object.
@@ -29,6 +35,9 @@ export default class SliderBehavior extends Behavior {
   private positionInputElements?: Vector3InputElements;
   private rotationInputElements?: Vector3InputElements;
   private scaleInputElements?: Vector3InputElements;
+  private position: VectorUpdate = { x: null, y: null, z: null };
+  private rotation: VectorUpdate = { x: null, y: null, z: null };
+  private scale: VectorUpdate = { x: null, y: null, z: null };
 
   /**
    * Creates a new SliderBehavior instance.
@@ -39,7 +48,7 @@ export default class SliderBehavior extends Behavior {
    * @param scaleInputElements The scale input elements for the game object.
    */
   constructor(
-    gameObject: GameObject,
+    _: GameObject,
     positionInputElements?: Vector3InputElements,
     rotationInputElements?: Vector3InputElements,
     scaleInputElements?: Vector3InputElements,
@@ -51,45 +60,33 @@ export default class SliderBehavior extends Behavior {
     this.scaleInputElements = scaleInputElements;
     // Handle position inputs
     if (positionInputElements !== undefined) {
-      positionInputElements.x?.addEventListener("input", () => {
-        gameObject.position.x = positionInputElements.x?.valueAsNumber || 0;
-      });
-      positionInputElements.y?.addEventListener("input", () => {
-        gameObject.position.y = positionInputElements.y?.valueAsNumber || 0;
-      });
-      positionInputElements.z?.addEventListener("input", () => {
-        gameObject.position.z = positionInputElements.z?.valueAsNumber || 0;
-      });
+      for (const key of ["x", "y", "z"] as const) {
+        const element = positionInputElements[key];
+        if (element === undefined) continue;
+        element.addEventListener("input", () => {
+          this.position[key] = element.valueAsNumber || 0;
+        });
+      }
     }
     // Handle rotation inputs
     if (rotationInputElements !== undefined) {
-      rotationInputElements.x?.addEventListener("input", () => {
-        gameObject.rotation.x = radians(
-          rotationInputElements.x?.valueAsNumber || 0,
-        );
-      });
-      rotationInputElements.y?.addEventListener("input", () => {
-        gameObject.rotation.y = radians(
-          rotationInputElements.y?.valueAsNumber || 0,
-        );
-      });
-      rotationInputElements.z?.addEventListener("input", () => {
-        gameObject.rotation.z = radians(
-          rotationInputElements.z?.valueAsNumber || 0,
-        );
-      });
+      for (const key of ["x", "y", "z"] as const) {
+        const element = rotationInputElements[key];
+        if (element === undefined) continue;
+        element.addEventListener("input", () => {
+          this.rotation[key] = radians(element.valueAsNumber || 0);
+        });
+      }
     }
     // Handle scale inputs
     if (scaleInputElements !== undefined) {
-      scaleInputElements.x?.addEventListener("input", () => {
-        gameObject.scale.x = scaleInputElements.x?.valueAsNumber || 0;
-      });
-      scaleInputElements.y?.addEventListener("input", () => {
-        gameObject.scale.y = scaleInputElements.y?.valueAsNumber || 0;
-      });
-      scaleInputElements.z?.addEventListener("input", () => {
-        gameObject.scale.z = scaleInputElements.z?.valueAsNumber || 0;
-      });
+      for (const key of ["x", "y", "z"] as const) {
+        const element = scaleInputElements[key];
+        if (element === undefined) continue;
+        element.addEventListener("input", () => {
+          this.scale[key] = element.valueAsNumber || 0;
+        });
+      }
     }
 
     // Register the span pairs
@@ -114,7 +111,18 @@ export default class SliderBehavior extends Behavior {
 
   /** Applies the controller's input to the game object. */
   public apply(gameObject: GameObject, deltaTime: number): void {
-    // We don't need to do anything with the sliders as we handle that in the constructor.
+    // Apply the updates if they exist
+    if (this.position.x !== null) gameObject.position.x = this.position.x;
+    if (this.position.y !== null) gameObject.position.y = this.position.y;
+    if (this.position.z !== null) gameObject.position.z = this.position.z;
+
+    if (this.rotation.x !== null) gameObject.rotation.x = this.rotation.x;
+    if (this.rotation.y !== null) gameObject.rotation.y = this.rotation.y;
+    if (this.rotation.z !== null) gameObject.rotation.z = this.rotation.z;
+
+    if (this.scale.x !== null) gameObject.scale.x = this.scale.x;
+    if (this.scale.y !== null) gameObject.scale.y = this.scale.y;
+    if (this.scale.z !== null) gameObject.scale.z = this.scale.z;
 
     // Register our input updates
     const positionElements = this.positionInputElements;
@@ -148,5 +156,12 @@ export default class SliderBehavior extends Behavior {
     for (const [input, span] of this.spanPairs) {
       span.textContent = input.valueAsNumber.toFixed(2);
     }
+  }
+
+  public clean(): void {
+    // Clear any updates that were applied to the game object, so they don't persist to the next frame.
+    this.position = { x: null, y: null, z: null };
+    this.rotation = { x: null, y: null, z: null };
+    this.scale = { x: null, y: null, z: null };
   }
 }

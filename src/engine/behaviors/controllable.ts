@@ -71,15 +71,7 @@ export default class ControllableBehavior extends Behavior {
         vec3(0, upAxis * moveSpeed * deltaTime, 0),
       );
     }
-
-    // When we click p / the debug button we log the position and rotation of the game object to the console for debugging purposes.
-    if (this.controller.getDebugAxis() > 0) {
-      console.log(
-        `Position: ${gameObject.position.x.toFixed(2)}, ${gameObject.position.y.toFixed(2)}, ${gameObject.position.z.toFixed(2)}`,
-      );
-      console.log(
-        `Rotation: ${gameObject.rotation.x.toFixed(2)}, ${gameObject.rotation.y.toFixed(2)}, ${gameObject.rotation.z.toFixed(2)}`,
-      );
-    }
   }
+
+  public clean(): void {}
 }

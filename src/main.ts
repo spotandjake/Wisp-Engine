@@ -1,6 +1,16 @@
 import { vec3, vec4, radians } from "mv-redux";
 import { WebGpuUnavailableError } from "./engine/internal/errors";
-import { cameraToggle, cameraPositions, cameraRotations } from "./menu";
+import {
+  // Camera Elements
+  cameraToggle,
+  cameraPositions,
+  cameraRotations,
+  // Item Movement Elements
+  itemToggles,
+  itemPositions,
+  itemRotations,
+  itemScales,
+} from "./menu";
 // Engine
 import Renderer, { RendererUpdateEvent } from "./engine/renderer";
 import Controller from "./engine/controller";
@@ -9,11 +19,13 @@ import Material from "./engine/prototypes/material";
 import getGLTFLoader from "./engine/primitives/gltf";
 // Behaviors
 import PlayerController from "./behaviors/playerController";
-import SliderBehavior from "./behaviors/slider";
+import SliderBehavior from "./behaviors/sliderBehavior";
+import SelectionBehavior from "./behaviors/selectionBehavior";
 // Models
 import World from "./engine/primitives/world";
 import Camera from "./engine/primitives/camera";
 import Plane from "./engine/primitives/plane";
+import Cube from "./engine/primitives/cube";
 import Light, { LightType } from "./engine/primitives/light";
 import Player from "./objects/player";
 
@@ -26,8 +38,12 @@ try {
   renderer = new Renderer(canvas, vec3(0.5, 0.7, 1.0));
   await renderer.initialize();
 } catch (error: unknown) {
-  // TODO: Display a nice error message to the user if WebGPU is not available.
-  if (error instanceof WebGpuUnavailableError) throw error;
+  if (error instanceof WebGpuUnavailableError) {
+    console.error(error);
+    alert(
+      "WebGPU is not available in your browser. Please try a different browser.",
+    );
+  }
   // Otherwise this error is completely unknown and unexpected
   throw error;
 }
@@ -36,11 +52,8 @@ try {
 const loadGLTF = getGLTFLoader(renderer);
 const House = await loadGLTF("./src/models/house/scene.gltf");
 
-// Load our textures
-// const groundTexture = await renderer.loadTexture('./src/textures/grass.png');
 // Create some behaviors
 const controller = new Controller(window);
-// const rotationControllableBehavior = new ControllableBehavior(controller, undefined, 2);
 const cameraSliderBehavior = (gameObject: GameObject) =>
   new SliderBehavior(gameObject, cameraPositions, cameraRotations, undefined);
 
@@ -99,6 +112,34 @@ player.addChild(flashLight);
 const playerController = new PlayerController(controller, player, 10, 2);
 player.addBehavior(playerController);
 world.addChild(player);
+
+// Create our moveable items
+const itemSliderBehavior = (gameObject: GameObject) =>
+  new SliderBehavior(gameObject, itemPositions, itemRotations, itemScales);
+
+const itemA = new Cube(vec3(20, 2, -10), vec3(0, 0, 0), vec3(2, 2, 2));
+const itemASelection = new SelectionBehavior(
+  itemSliderBehavior(itemA),
+  itemToggles.cubeA,
+);
+itemA.addBehavior(itemASelection);
+world.addChild(itemA);
+
+const itemB = new Cube(vec3(20, 2, 0), vec3(0, 0, 0), vec3(2, 2, 2));
+const itemBSelection = new SelectionBehavior(
+  itemSliderBehavior(itemB),
+  itemToggles.cubeB,
+);
+itemB.addBehavior(itemBSelection);
+world.addChild(itemB);
+
+const itemC = new Cube(vec3(0, 0, 5), vec3(0, 0, 0), vec3(1, 1, 1));
+const itemCSelection = new SelectionBehavior(
+  itemSliderBehavior(itemC),
+  itemToggles.cubeC,
+);
+itemC.addBehavior(itemCSelection);
+itemB.addChild(itemC);
 
 // Set our basic renderer properties
 renderer.setScene(world);

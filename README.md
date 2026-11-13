@@ -39,7 +39,6 @@ The following npm scripts are available:
 
 The source of these commands can be found in `./package.json`.
 
-
 ## Dependencies
 
 The Wisp Engine has been built mostly from scratch. However in order to keep things manageable (and maintain my sanity), a handful of libraries are used to handle more tedious or complex problems.

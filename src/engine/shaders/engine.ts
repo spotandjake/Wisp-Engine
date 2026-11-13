@@ -49,7 +49,7 @@ type GpuLightBufferData = {
 /** The input for the engine shader ABI. */
 export interface EngineShaderAbiInput {
   /** The textures to use for the engine shader. */
-  textures: Map<TextureReference, GPUTexture>;
+  textureStore: Map<TextureReference, GPUTexture>;
   /** The lights in the scene. */
   lights: [Light, Vec3, Vec3][];
   /** The material to use for the engine shader. */
@@ -62,13 +62,13 @@ export interface EngineShaderAbiInput {
 /** The interface for the engine shader ABI. */
 export default (
   { device, defs, layouts, pass }: StandardShaderAbiInput,
-  { textures, lights, material, renderer, worldMat }: EngineShaderAbiInput,
+  { textureStore, lights, material, renderer, worldMat }: EngineShaderAbiInput,
 ) => {
   // Get the material texture if it has one
   const materialTexture =
-    material.Texture !== null ? textures.get(material.Texture) : null;
+    material.Texture !== null ? textureStore.get(material.Texture) : null;
   if (materialTexture === undefined && material.Texture !== null) {
-    throw new Error("Material texture not found in textures map.");
+    throw new Error("Material texture not found in texture store.");
   }
 
   // Create our structured views

@@ -1,7 +1,7 @@
 // NOTE: While this logic could be on gameObject separating it provides more flexibility.
 import type { Vec3, Mat4 } from "mv-redux";
 import type { Arrays, ShaderDataDefinitions } from "webgpu-utils";
-import type { RendererContext, TextureReference } from "../renderer";
+import type { PassRendererContext, TextureReference } from "../renderer";
 import type { Geometry } from "../geometry";
 import type Light from "../primitives/light";
 import Material from "./material";
@@ -73,21 +73,22 @@ class RenderableGameObject extends GameObject {
    * @param viewProjectionMatrix The view-projection matrix for the camera.
    * @param cameraPosition The position of the camera in world space.
    */
-  public render(
-    context: RendererContext,
-    pass: GPURenderPassEncoder,
-    textures: Map<TextureReference, GPUTexture>,
-    worldMatrix: Mat4,
-    lights: [Light, Vec3, Vec3][],
-    viewProjectionMatrix: Mat4,
-    cameraPosition: Vec3,
-  ): void {
+  public render({
+    webgpu,
+    pass,
+    viewProjectionMatrix,
+    cameraPosition,
+    worldMatrix,
+    ambientLightColor,
+    lights,
+    textureStore,
+  }: PassRendererContext): void {
     // Get the geometry
     const geometry = this.getGeometry();
     const vertexCount = geometry.positions.length / 3;
 
     // Compile the shader and get our definitions
-    const { shaderModule, defs } = getShaderModuleAndDefs(context.device);
+    const { shaderModule, defs } = getShaderModuleAndDefs(webgpu.device);
 
     // Construct our attribute layout from shader data definitions
     let attributeBuffers: Arrays = {
@@ -105,7 +106,7 @@ class RenderableGameObject extends GameObject {
     if (geometry.indices !== undefined)
       attributeBuffers = { ...attributeBuffers, indices: geometry.indices };
     const attributes = createBuffersAndAttributesFromArrays(
-      context.device,
+      webgpu.device,
       attributeBuffers,
     );
 
@@ -122,19 +123,19 @@ class RenderableGameObject extends GameObject {
         module: shaderModule,
         // The entry point for the fragment shader in the shader code.
         entryPoint: "fragment_main",
-        targets: [{ format: context.format }],
+        targets: [{ format: webgpu.format }],
       },
     };
     // Create the bind group layouts and pipeline layout
     const descriptors = makeBindGroupLayoutDescriptors(defs, pipelineDesc);
     const groupLayouts = descriptors.map((desc) =>
-      context.device.createBindGroupLayout(desc),
+      webgpu.device.createBindGroupLayout(desc),
     );
-    const pipelineLayout = context.device.createPipelineLayout({
+    const pipelineLayout = webgpu.device.createPipelineLayout({
       bindGroupLayouts: groupLayouts,
     });
     // Create the render pipeline
-    const pipeline = context.device.createRenderPipeline({
+    const pipeline = webgpu.device.createRenderPipeline({
       layout: pipelineLayout,
       ...pipelineDesc,
       depthStencil: {
@@ -154,17 +155,17 @@ class RenderableGameObject extends GameObject {
 
     // Pass the data to the GPU using our shader ABIs.
     const baseShaderAbiInput = {
-      device: context.device,
+      device: webgpu.device,
       defs,
       layouts: groupLayouts,
       pass,
     };
     engineShaderAbi(baseShaderAbiInput, {
-      textures,
+      textureStore,
       lights,
       material: this.material,
       renderer: {
-        ambient_light: vec3(0.2, 0.2, 0.2),
+        ambient_light: ambientLightColor,
         camera_position: cameraPosition,
         view_projection: viewProjectionMatrix,
       },

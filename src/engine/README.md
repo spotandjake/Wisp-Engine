@@ -50,7 +50,6 @@ Textures provide additional surface detail by mapping image data onto an object'
 
 Textures are completely optional, allowing objects to use simple vertex colors when additional detail isn't needed, additionally both vertex coloring and textures can be applied to get more varied effects (such as per vertex tinting).
 
-
 ### Prototypes
 
 The `./prototypes` directory contains the base implementations used to build and extend the engine's systems.
@@ -107,6 +106,7 @@ The shader system uses [WESL](https://wesl-lang.dev/), a small superset of [WGSL
 The primary reason for using WESL is to separate the shader functionality provided by the engine from the shaders implemented by users. This allows shared functionality, such as lighting calculations and common data structures, to be defined once and reused across multiple shaders.
 
 Currently, there are two main shader files:
+
 - `./engine.wesl` – Defines the core shader functionality provided by the engine, including common data structures and lighting calculations.
 - `./default.wesl` – Defines the default shader used by `RenderableGameObject`. This also serves as a reference for implementing custom shaders.
 
