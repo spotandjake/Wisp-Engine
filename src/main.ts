@@ -50,7 +50,7 @@ try {
 
 // Initiate our GLTF loader
 const loadGLTF = getGLTFLoader(renderer);
-const House = await loadGLTF("./src/models/house/scene.gltf");
+const House = await loadGLTF("./models/house/scene.gltf");
 
 // Create some behaviors
 const controller = new Controller(window);
@@ -103,8 +103,8 @@ const playerCamera = new Camera(
   canvas.width / canvas.height,
 );
 const player = new Player(
-  vec3(0, 10, 0),
-  vec3(0, 0, 0),
+  vec3(30, 2.5, -30),
+  vec3(0, Math.PI / 2, 0),
   vec3(1, 1, 1),
   playerCamera,
 );

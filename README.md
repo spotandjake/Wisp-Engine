@@ -1,4 +1,4 @@
-# Wisp Engine
+# 🌀 Wisp Engine
 
 Wisp Engine is a lightweight rendering engine built on top of WebGPU, designed to provide a foundation for building 3D games and interactive scenes.
 
@@ -65,6 +65,10 @@ These dependencies are used during development and are not required as runtime l
 - [`prettier`](https://www.npmjs.com/package/prettier) – Maintains consistent code formatting throughout the project.
 - [`@webgpu/types`](https://www.npmjs.com/package/@webgpu/types) – Provides TypeScript definitions for the WebGPU API.
 - [`@types/node`](https://www.npmjs.com/package/@types/node) – Provides TypeScript definitions for Node.js APIs used by Vite and the development tooling.
+
+## Model Attribution
+
+The house model has been taken from SketchFab, and was made by `Lodgelus`, it is available [here](https://sketchfab.com/3d-models/house-with-interior-and-porch-51aa0e8c9b224262af9df8942761e5c7).
 
 ## License
 
