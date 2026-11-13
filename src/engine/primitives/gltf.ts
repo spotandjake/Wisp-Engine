@@ -17,18 +17,31 @@ const convertGltfMaterialToEngineMaterial = async (
   renderer: Renderer,
   gltfMaterial: GltfMaterial | null,
 ): Promise<Material> => {
-  if (gltfMaterial === null) return new Material(vec4(1, 1, 1, 1), null, 32);
+  const fallbackMaterial = new Material(
+    vec4(1, 1, 1, 1),
+    vec4(1, 1, 1, 1),
+    vec4(1, 1, 1, 1),
+    32,
+    null,
+  );
+  if (gltfMaterial === null) return fallbackMaterial;
   // NOTE: We fall back to white if the material is null, since we don't have a material to use
   const color = gltfMaterial.getBaseColorFactor();
   // Load the texture
   const baseTexture = gltfMaterial.getBaseColorTexture();
-  if (baseTexture == null) return new Material(vec4(...color), null, 32);
+  if (baseTexture == null) return fallbackMaterial;
   const pixelData = baseTexture.getImage();
-  if (pixelData === null) return new Material(vec4(...color), null, 32);
+  if (pixelData === null) return fallbackMaterial;
   const blob = new Blob([pixelData], { type: baseTexture.getMimeType() });
   const bitmap = await createImageBitmap(blob);
   const textureReference = await renderer.loadImageBitmap(bitmap);
-  return new Material(vec4(...color), textureReference, 32);
+  return new Material(
+    vec4(...color),
+    vec4(...color),
+    vec4(1, 1, 1, 1),
+    32,
+    textureReference,
+  );
 };
 
 /** Converts a GLTF primitive to an engine geometry */

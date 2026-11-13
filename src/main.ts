@@ -35,7 +35,7 @@ const canvas = document.getElementById("screen") as HTMLCanvasElement;
 // Setup our renderer
 let renderer: Renderer;
 try {
-  renderer = new Renderer(canvas, vec3(0.5, 0.7, 1.0));
+  renderer = new Renderer(canvas, vec3(0.5, 0.7, 1.0), vec3(0.15, 0.15, 0.15));
   await renderer.initialize();
 } catch (error: unknown) {
   if (error instanceof WebGpuUnavailableError) {
@@ -65,18 +65,24 @@ const ground = new Plane(
   vec3(0, 0, 0),
   vec3(1000, 1, 1000),
   // Grass Green ground
-  new Material(vec4(0.0, 1.0, 0.0, 1.0), null, 32),
+  new Material(
+    vec4(0.0, 1.0, 0.0, 1.0),
+    vec4(0.0, 1.0, 0.0, 1.0),
+    vec4(1.0, 1.0, 1.0, 1.0),
+    32,
+    null,
+  ),
 );
 world.addChild(ground);
 const house = new House(vec3(0, 1, 0), vec3(0, 0, 0), vec3(0.03, 0.03, 0.03));
 world.addChild(house);
 const sun = new Light(
   vec3(0, 10, 0),
-  vec3(0, 0, 0),
+  vec3(radians(-45), radians(45), 0),
   LightType.Directional,
   1.0,
-  vec3(1, 1, 1),
-  100.0,
+  1000.0,
+  vec4(1, 1, 1, 1),
 );
 world.addChild(sun);
 
@@ -93,9 +99,9 @@ const flashLight = new Light(
   vec3(0, 0, 0),
   vec3(0, 0, 0),
   LightType.Point,
-  1.0,
-  vec3(1, 1, 1),
+  25.0,
   100.0,
+  vec4(1, 1, 1, 1),
 );
 const playerCamera = new Camera(
   vec3(0, 0, 0),

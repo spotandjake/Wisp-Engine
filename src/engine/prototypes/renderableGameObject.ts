@@ -1,12 +1,11 @@
 // NOTE: While this logic could be on gameObject separating it provides more flexibility.
-import type { Vec3, Mat4 } from "mv-redux";
+import type { Vec3 } from "mv-redux";
 import type { Arrays, ShaderDataDefinitions } from "webgpu-utils";
-import type { PassRendererContext, TextureReference } from "../renderer";
+import type { PassRendererContext } from "../renderer";
 import type { Geometry } from "../geometry";
-import type Light from "../primitives/light";
 import Material from "./material";
 
-import { vec3 } from "mv-redux";
+import { normalMatrix, mult } from "mv-redux";
 import { EmptyGeometryError } from "../internal/errors";
 import {
   makeShaderDataDefinitions,
@@ -66,12 +65,7 @@ class RenderableGameObject extends GameObject {
    *
    * NOTE: If you want to use a custom shader, you should override this method in a subclass.
    *
-   * @param context The renderer context.
-   * @param pass The render pass encoder.
-   * @param worldMatrix The world transformation matrix for the object.
-   * @param lights The lights in the scene, along with their positions and directions.
-   * @param viewProjectionMatrix The view-projection matrix for the camera.
-   * @param cameraPosition The position of the camera in world space.
+   * @param passRenderContext - The context for the current render pass
    */
   public render({
     webgpu,
@@ -79,7 +73,7 @@ class RenderableGameObject extends GameObject {
     viewProjectionMatrix,
     cameraPosition,
     worldMatrix,
-    ambientLightColor,
+    sceneAmbient,
     lights,
     textureStore,
   }: PassRendererContext): void {
@@ -165,15 +159,16 @@ class RenderableGameObject extends GameObject {
       lights,
       material: this.material,
       renderer: {
-        ambient_light: ambientLightColor,
+        scene_ambient: sceneAmbient,
         camera_position: cameraPosition,
         view_projection: viewProjectionMatrix,
       },
-      worldMat: worldMatrix,
     });
 
+    const modelMatrix = mult(worldMatrix, this.getModelMatrix());
     defaultShaderAbi(baseShaderAbiInput, {
-      modelMatrix: this.getModelMatrix(),
+      modelMatrix: modelMatrix,
+      normalMatrix: normalMatrix(modelMatrix, true),
     });
 
     // Bind the vertex shader attributes

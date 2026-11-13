@@ -31,7 +31,7 @@ export type PassRendererContext = {
   /** World matrix for the current render pass. */
   worldMatrix: Mat4;
   /** The ambient light color for the current render pass. */
-  ambientLightColor: Vec3;
+  sceneAmbient: Vec3;
   /** The light buffer for the current render pass. */
   lights: [Light, Vec3, Vec3][];
   /** The texture store for the current render pass. */
@@ -75,12 +75,18 @@ class Renderer extends EventTarget {
   private lastTimeStamp: number = 0;
   /** The sky color for the renderer. */
   private skyColor: Vec3;
+  /** The ambient light color for the renderer. */
+  private ambientLightColor: Vec3;
   /** A global store for all textures. */
   private textureStore: Map<TextureReference, GPUTexture> = new Map();
   /** The resize observer for the canvas. */
   private resizeObserver: ResizeObserver | null = null;
 
-  constructor(canvas: HTMLCanvasElement, skyColor: Vec3 = vec3(0.5, 0.7, 1.0)) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    skyColor: Vec3 = vec3(0.5, 0.7, 1.0),
+    ambientLightColor: Vec3 = vec3(0.15, 0.15, 0.15),
+  ) {
     super();
     // Check if WebGPU is available in the browser.
     if (!navigator.gpu)
@@ -92,6 +98,8 @@ class Renderer extends EventTarget {
     this.canvas = canvas;
     // Store our sky color for later use.
     this.skyColor = skyColor;
+    // Store our ambient light color for later use.
+    this.ambientLightColor = ambientLightColor;
     // Initialize the texture store for later use.
     this.textureStore = new Map();
 
@@ -258,16 +266,10 @@ class Renderer extends EventTarget {
       }
       // If the object is a light, store the light data for later use
       if (obj instanceof Light) {
-        const rotationY = Math.asin(
-          Math.max(-1, Math.min(1, childWorldMatrix[2][0])),
-        );
-        const rotationX = Math.atan2(
+        const direction = vec3(
+          -childWorldMatrix[2][0],
           -childWorldMatrix[2][1],
-          childWorldMatrix[2][2],
-        );
-        const rotationZ = Math.atan2(
-          -childWorldMatrix[1][0],
-          childWorldMatrix[0][0],
+          -childWorldMatrix[2][2],
         );
         lightBuffer.push([
           obj,
@@ -277,7 +279,7 @@ class Renderer extends EventTarget {
             childWorldMatrix[3][1],
             childWorldMatrix[3][2],
           ),
-          vec3(rotationX, rotationY, rotationZ),
+          direction,
         ]);
       }
       const shouldRender = parentShouldRender && obj.shouldRender(this);
@@ -306,7 +308,7 @@ class Renderer extends EventTarget {
         viewProjectionMatrix,
         cameraPosition,
         worldMatrix,
-        ambientLightColor: this.skyColor,
+        sceneAmbient: this.ambientLightColor,
         lights: lightBuffer,
         textureStore: this.textureStore,
       });

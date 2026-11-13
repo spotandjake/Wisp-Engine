@@ -30,7 +30,8 @@ class Cube extends GameObject {
 
     // Create a material for each face of the cube
     const materials: Material[] = faceColors.map(
-      (color) => new Material(color, null, 32),
+      (color) =>
+        new Material(color, vec4(1, 1, 1, 1), vec4(0.2, 0.2, 0.2, 1), 32, null),
     );
 
     // Create the cube's geometry using planes

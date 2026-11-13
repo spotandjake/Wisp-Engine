@@ -1,11 +1,7 @@
 // Import the engine module for the primitives helpers and types
 import super::engine::{ 
   renderer,
-  world,
-  material,
-  base_texture,
-  base_sampler,
-  apply_fragment_lighting
+  apply_fragment_processing
 };
 
 // Bind our uniforms
@@ -14,8 +10,10 @@ var<uniform> model: Model;
 
 /** The attributes of the model itself. */
 struct Model {
-  /** The model matrix (the transform of the object itself) */
-  matrix: mat4x4<f32>
+  /** The model matrix in world space. */
+  modelMatrix: mat4x4<f32>,
+  /** The normal matrix in world space. */
+  normalMatrix: mat3x3<f32>
 };
 
 // Setup our vertex shader
@@ -48,10 +46,9 @@ struct VertexOutput {
 @vertex
 fn vertex_main(input: VertexInput) -> VertexOutput {
   // Compute the position
-  let world_model_position = world.matrix * model.matrix;
-  let world_position = world_model_position * vec4<f32>(input.position, 1.0);
+  let world_position = model.modelMatrix * vec4<f32>(input.position, 1.0);
   let clip_position = renderer.view_projection * world_position;
-  let normal = normalize(world_model_position * vec4<f32>(input.normal, 0.0)).xyz;
+  let normal = normalize(model.normalMatrix * input.normal);
   // Pack our output 
   var output: VertexOutput;
   output.position = clip_position;
@@ -66,26 +63,10 @@ fn vertex_main(input: VertexInput) -> VertexOutput {
 /** The fragment shader, takes a VertexOutput and returns a color. */
 @fragment
 fn fragment_main(input: VertexOutput) -> @location(0) vec4<f32> {
-  // Use the engine to compute the lighting
-  let lighting = apply_fragment_lighting(
-    input.worldPosition, 
-    normalize(input.normal)
+  return apply_fragment_processing(
+    input.worldPosition,
+    input.normal,
+    input.uv,
+    input.color
   );
-  // Get the texture color if needed
-  var texture_color = vec4<f32>(1.0);
-  if (material.has_texture == 1u) {
-    texture_color = textureSample(
-      base_texture,
-      base_sampler,
-      input.uv
-    );
-  }
-
-  // Compute the final color of the fragment based on the material properties
-  let color = material.base_color * input.color * texture_color;
- 
-  // Apply the lighting
-  let final_color = color * vec4<f32>(lighting, 1.0);
-  // Apply the lighting to the scene
-  return final_color;
 }
