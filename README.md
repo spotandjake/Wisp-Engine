@@ -1,5 +1,7 @@
 # 🌀 Wisp Engine
 
+Demo: https://spotandjake.github.io/Wisp-Engine/
+
 Wisp Engine is a lightweight rendering engine built on top of WebGPU, designed to provide a foundation for building 3D games and interactive scenes.
 
 The engine combines **entity-component-system (ECS)** architecture with traditional inheritance to give developers flexibility when structuring game objects, building scenes, and implementing complex behaviors.
